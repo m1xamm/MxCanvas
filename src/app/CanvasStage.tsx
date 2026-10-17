@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'preact/hooks'
+import { CreateNodeCommand } from '../core/commands/create-node-command'
 import { Viewport } from '../core/viewport'
 import { CanvasController } from '../interaction/canvas-controller'
-import { selectionStore } from '../interaction/selection'
+import { selectionStore, setSelection } from '../interaction/selection'
 import type { ToolId } from '../interaction/tools'
 import { Canvas2DRenderer } from '../render/canvas2d-renderer'
-import { scene } from './editor'
+import { createRectangle, history, scene } from './editor'
 import { observeDevicePixelRatio } from './observe-device-pixel-ratio'
 import { setTool, setZoom } from './store'
 
@@ -29,16 +30,26 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
     if (!container || !canvas) return
 
     const viewport = new Viewport()
+    let controller: CanvasController | null = null
     const renderer = new Canvas2DRenderer(canvas, viewport, {
       scene,
       getSelection: () => selectionStore.get(),
+      getDraft: () => controller?.draft ?? null,
     })
-    const controller = new CanvasController(canvas, viewport, {
+    const createdController = new CanvasController(canvas, viewport, {
       initialTool: tool,
       onToolChange: setTool,
+      onCreateRectangle: (bounds) => {
+        const node = createRectangle(bounds)
+        history.execute(new CreateNodeCommand(scene, node))
+        setSelection([node.id])
+        setTool('move')
+      },
+      onDraftChange: () => renderer.requestRender(),
       isInputBlocked: () => blockedRef.current,
     })
-    controllerRef.current = controller
+    controller = createdController
+    controllerRef.current = createdController
 
     const resize = () => {
       const rect = container.getBoundingClientRect()
@@ -63,7 +74,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       unsubscribeViewport()
       unsubscribeScene()
       unsubscribeSelection()
-      controller.dispose()
+      createdController.dispose()
       renderer.dispose()
       controllerRef.current = null
     }

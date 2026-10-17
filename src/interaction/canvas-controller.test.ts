@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { Rect } from '../core/math/rect'
 import { Viewport } from '../core/viewport'
 import { CanvasController } from './canvas-controller'
 import type { ToolId } from './tools'
@@ -96,8 +97,15 @@ function createPointerEvent(init: {
   pointerId: number
   clientX: number
   clientY: number
+  shiftKey?: boolean
+  altKey?: boolean
 }) {
-  return { ...init, preventDefault: vi.fn() }
+  return {
+    ...init,
+    shiftKey: init.shiftKey ?? false,
+    altKey: init.altKey ?? false,
+    preventDefault: vi.fn(),
+  }
 }
 
 function setup(initialTool: ToolId = 'move') {
@@ -107,12 +115,22 @@ function setup(initialTool: ToolId = 'move') {
   const canvas = createFakeCanvas()
   const viewport = new Viewport()
   const onToolChange = vi.fn<(tool: ToolId) => void>()
+  const onCreateRectangle = vi.fn<(bounds: Rect) => void>()
+  const onDraftChange = vi.fn<() => void>()
   const controller = new CanvasController(
     canvas as unknown as HTMLCanvasElement,
     viewport,
-    { initialTool, onToolChange },
+    { initialTool, onToolChange, onCreateRectangle, onDraftChange },
   )
-  return { fakeWindow, canvas, viewport, onToolChange, controller }
+  return {
+    fakeWindow,
+    canvas,
+    viewport,
+    onToolChange,
+    onCreateRectangle,
+    onDraftChange,
+    controller,
+  }
 }
 
 afterEach(() => {
@@ -230,6 +248,57 @@ describe('CanvasController', () => {
     input.tagName = 'INPUT'
     fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyH', target: input as unknown as EventTarget }))
     expect(onToolChange).not.toHaveBeenCalled()
+    controller.dispose()
+  })
+
+  it('switches to the rectangle tool with the R hotkey', () => {
+    const { fakeWindow, canvas, onToolChange, controller } = setup()
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyR' }))
+    expect(onToolChange).toHaveBeenCalledWith('rectangle')
+    expect(canvas.style.cursor).toBe('crosshair')
+    controller.dispose()
+  })
+
+  it('creates a rectangle from a drag with the rectangle tool', () => {
+    const { canvas, onCreateRectangle, controller } = setup('rectangle')
+    expect(canvas.style.cursor).toBe('crosshair')
+    canvas.dispatch('pointerdown', createPointerEvent({ button: 0, pointerId: 5, clientX: 120, clientY: 80 }))
+    expect(controller.draft).toEqual({ x: 20, y: 30, width: 100, height: 100 })
+    canvas.dispatch('pointermove', createPointerEvent({ button: 0, pointerId: 5, clientX: 220, clientY: 180 }))
+    expect(controller.draft).toEqual({ x: 20, y: 30, width: 100, height: 100 })
+    expect(onCreateRectangle).not.toHaveBeenCalled()
+    canvas.dispatch('pointerup', createPointerEvent({ button: 0, pointerId: 5, clientX: 220, clientY: 180 }))
+    expect(controller.draft).toBeNull()
+    expect(onCreateRectangle).toHaveBeenCalledWith({ x: 20, y: 30, width: 100, height: 100 })
+    controller.dispose()
+  })
+
+  it('applies shift and alt while drawing a rectangle', () => {
+    const { canvas, controller } = setup('rectangle')
+    canvas.dispatch('pointerdown', createPointerEvent({ button: 0, pointerId: 6, clientX: 300, clientY: 250 }))
+    canvas.dispatch('pointermove', createPointerEvent({ button: 0, pointerId: 6, clientX: 200, clientY: 200, shiftKey: true }))
+    expect(controller.draft).toEqual({ x: 100, y: 100, width: 100, height: 100 })
+    canvas.dispatch('pointermove', createPointerEvent({ button: 0, pointerId: 6, clientX: 200, clientY: 200, altKey: true }))
+    expect(controller.draft).toEqual({ x: 100, y: 150, width: 200, height: 100 })
+    controller.dispose()
+  })
+
+  it('creates a 100x100 rectangle on a click', () => {
+    const { canvas, onCreateRectangle, controller } = setup('rectangle')
+    canvas.dispatch('pointerdown', createPointerEvent({ button: 0, pointerId: 7, clientX: 300, clientY: 250 }))
+    canvas.dispatch('pointerup', createPointerEvent({ button: 0, pointerId: 7, clientX: 301, clientY: 251 }))
+    expect(onCreateRectangle).toHaveBeenCalledWith({ x: 200, y: 200, width: 100, height: 100 })
+    controller.dispose()
+  })
+
+  it('cancels the rectangle draft on escape', () => {
+    const { fakeWindow, canvas, onCreateRectangle, controller } = setup('rectangle')
+    canvas.dispatch('pointerdown', createPointerEvent({ button: 0, pointerId: 8, clientX: 120, clientY: 80 }))
+    canvas.dispatch('pointermove', createPointerEvent({ button: 0, pointerId: 8, clientX: 220, clientY: 180 }))
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'Escape' }))
+    expect(controller.draft).toBeNull()
+    canvas.dispatch('pointerup', createPointerEvent({ button: 0, pointerId: 8, clientX: 220, clientY: 180 }))
+    expect(onCreateRectangle).not.toHaveBeenCalled()
     controller.dispose()
   })
 })

@@ -9,7 +9,7 @@ export interface ToolDefinition {
 export const TOOLS: readonly ToolDefinition[] = [
   { id: 'move', hotkey: 'V', available: true },
   { id: 'frame', available: false },
-  { id: 'rectangle', available: false },
+  { id: 'rectangle', hotkey: 'R', available: true },
   { id: 'ellipse', available: false },
   { id: 'line', available: false },
   { id: 'pen', available: false },
@@ -19,5 +19,6 @@ export const TOOLS: readonly ToolDefinition[] = [
 
 export const TOOL_HOTKEYS: ReadonlyMap<string, ToolId> = new Map([
   ['KeyV', 'move'],
+  ['KeyR', 'rectangle'],
   ['KeyH', 'hand'],
 ])
