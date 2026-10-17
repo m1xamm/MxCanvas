@@ -27,6 +27,17 @@ export function RightPanel({ zoom }: RightPanelProps) {
           {formatZoomPercent(zoom)}
         </span>
       </div>
+      <div class="block block--tight">
+        <Cluster class="segmented-control" role="group" ariaLabel={t('design')}>
+          <button
+            type="button"
+            class="control segmented-button segmented-button--stretch is-active"
+            aria-pressed="true"
+          >
+            {t('design')}
+          </button>
+        </Cluster>
+      </div>
       {SECTION_KEYS.map((key) => (
         <div key={key} class="block block--stack">
           <span class="section-title">{t(key)}</span>

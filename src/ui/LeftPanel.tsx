@@ -4,17 +4,12 @@ import { useTranslation } from '../i18n/use-i18n'
 import { Cluster } from './Cluster'
 import { MainMenu } from './MainMenu'
 
-const PANEL_TABS = ['layers', 'assets'] as const
+const PANEL_TABS = ['file', 'assets'] as const
 type PanelTab = (typeof PANEL_TABS)[number]
 
-const TAB_LABEL_KEYS: Record<PanelTab, 'layers' | 'assets'> = {
-  layers: 'layers',
+const TAB_LABEL_KEYS: Record<PanelTab, 'file' | 'assets'> = {
+  file: 'file',
   assets: 'assets',
-}
-
-const TAB_EMPTY_KEYS: Record<PanelTab, 'noLayers' | 'noAssets'> = {
-  layers: 'noLayers',
-  assets: 'noAssets',
 }
 
 export interface LeftPanelProps {
@@ -24,7 +19,7 @@ export interface LeftPanelProps {
 
 export function LeftPanel({ onOpenSettings, menuButtonRef }: LeftPanelProps) {
   const t = useTranslation()
-  const [activeTab, setActiveTab] = useState<PanelTab>('layers')
+  const [activeTab, setActiveTab] = useState<PanelTab>('file')
 
   return (
     <Cluster direction="vertical" class="side-panel side-panel--left">
@@ -50,12 +45,27 @@ export function LeftPanel({ onOpenSettings, menuButtonRef }: LeftPanelProps) {
           ))}
         </Cluster>
       </div>
-      <div class="block block--row">
-        <span class="page-name">{t('pageName')}</span>
-      </div>
-      <div class="block block--fill">
-        <p class="panel-text">{t(TAB_EMPTY_KEYS[activeTab])}</p>
-      </div>
+      {activeTab === 'file' ? (
+        <>
+          <div class="block block--section">
+            <span class="section-title">{t('pages')}</span>
+            <Cluster direction="vertical">
+              <div class="panel-row is-active" aria-current="page">
+                {t('pageName')}
+              </div>
+            </Cluster>
+          </div>
+          <div class="block block--section block--fill">
+            <span class="section-title">{t('layers')}</span>
+            <p class="panel-text">{t('noLayers')}</p>
+          </div>
+        </>
+      ) : (
+        <div class="block block--section block--fill">
+          <span class="section-title">{t('assets')}</span>
+          <p class="panel-text">{t('noAssets')}</p>
+        </div>
+      )}
     </Cluster>
   )
 }
