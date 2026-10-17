@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks'
+import { Cluster } from './Cluster'
 
 const PANEL_TABS = ['layers', 'assets'] as const
 type PanelTab = (typeof PANEL_TABS)[number]
@@ -17,24 +18,28 @@ export function LeftPanel() {
   const [activeTab, setActiveTab] = useState<PanelTab>('layers')
 
   return (
-    <aside class="side-panel side-panel--left">
-      <div class="panel-tabs" role="tablist" aria-label="Document panels">
-        {PANEL_TABS.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            role="tab"
-            class={tab === activeTab ? 'panel-tab panel-tab--active' : 'panel-tab'}
-            aria-selected={tab === activeTab}
-            onClick={() => setActiveTab(tab)}
-          >
-            {TAB_LABELS[tab]}
-          </button>
-        ))}
+    <Cluster direction="vertical" class="side-panel side-panel--left">
+      <div class="block block--tight">
+        <Cluster class="segmented-control">
+          {PANEL_TABS.map((tab) => (
+            <button
+              key={tab}
+              type="button"
+              class={tab === activeTab ? 'control segmented-button is-active' : 'control segmented-button'}
+              aria-pressed={tab === activeTab}
+              onClick={() => setActiveTab(tab)}
+            >
+              {TAB_LABELS[tab]}
+            </button>
+          ))}
+        </Cluster>
       </div>
-      <div class="panel-body">
-        <p class="panel-empty">{TAB_EMPTY_MESSAGES[activeTab]}</p>
+      <div class="block block--row">
+        <span class="page-name">Page 1</span>
       </div>
-    </aside>
+      <div class="block block--fill">
+        <p class="panel-text">{TAB_EMPTY_MESSAGES[activeTab]}</p>
+      </div>
+    </Cluster>
   )
 }

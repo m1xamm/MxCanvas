@@ -1,21 +1,25 @@
+import { Cluster } from './Cluster'
 import { formatZoomPercent } from './format-zoom'
 
 export interface RightPanelProps {
   zoom: number
 }
 
+const SECTIONS = ['Position', 'Layout', 'Appearance', 'Fill', 'Stroke', 'Effects', 'Export'] as const
+
 export function RightPanel({ zoom }: RightPanelProps) {
   return (
-    <aside class="side-panel side-panel--right">
-      <div class="panel-tabs">
-        <span class="panel-tab panel-tab--active">Design</span>
+    <Cluster direction="vertical" class="side-panel side-panel--right">
+      <div class="block block--row">
         <span class="zoom-readout" aria-live="polite">
           {formatZoomPercent(zoom)}
         </span>
       </div>
-      <div class="panel-body">
-        <p class="panel-empty">Nothing selected</p>
-      </div>
-    </aside>
+      {SECTIONS.map((section) => (
+        <div key={section} class="block block--stack">
+          <span class="section-title">{section}</span>
+        </div>
+      ))}
+    </Cluster>
   )
 }
