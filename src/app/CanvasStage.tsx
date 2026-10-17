@@ -1,13 +1,17 @@
 import { useEffect, useRef } from 'preact/hooks'
 import { CreateNodeCommand } from '../core/commands/create-node-command'
+import type { NodeId } from '../core/document/types'
+import type { NodeBox } from '../core/transform'
 import { Viewport } from '../core/viewport'
 import { CanvasController } from '../interaction/canvas-controller'
 import { selectionStore, setSelection } from '../interaction/selection'
 import type { ToolId } from '../interaction/tools'
 import { Canvas2DRenderer } from '../render/canvas2d-renderer'
-import { createRectangle, history, scene } from './editor'
+import { createRectangle, history, moveSelection, scene } from './editor'
 import { observeDevicePixelRatio } from './observe-device-pixel-ratio'
 import { setTool, setZoom } from './store'
+
+const NO_PREVIEWS: ReadonlyMap<NodeId, NodeBox> = new Map<NodeId, NodeBox>()
 
 export interface CanvasStageProps {
   tool: ToolId
@@ -36,6 +40,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       getSelection: () => selectionStore.get(),
       getHoveredId: () => controller?.hoveredId ?? null,
       getMarquee: () => controller?.marquee ?? null,
+      getPreviews: () => controller?.previews ?? NO_PREVIEWS,
       getDraft: () => controller?.draft ?? null,
     })
     const createdController = new CanvasController(canvas, viewport, {
@@ -44,6 +49,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       getSelection: () => selectionStore.get(),
       onToolChange: setTool,
       onSelectionChange: setSelection,
+      onMoveSelection: moveSelection,
       onCreateRectangle: (bounds) => {
         const node = createRectangle(bounds)
         history.execute(new CreateNodeCommand(scene, node))

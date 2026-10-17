@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { Document } from '../core/document/document'
 import type { NodeId, RectangleNode } from '../core/document/types'
-import { translation } from '../core/math/matrix'
+import { translation, type Vec2 } from '../core/math/matrix'
 import { Viewport } from '../core/viewport'
 import { SelectionTool, type SelectionPointerInput } from './selection-tool'
 
@@ -39,12 +39,14 @@ function setup() {
   const onSelectionChange = vi.fn<(ids: readonly NodeId[]) => void>((ids) => {
     selection = ids
   })
+  const onMoveSelection = vi.fn<(delta: Vec2) => void>()
   const onOverlayChange = vi.fn<() => void>()
   const tool = new SelectionTool({
     scene,
     viewport,
     getSelection: () => selection,
     onSelectionChange,
+    onMoveSelection,
     onOverlayChange,
   })
   return {
@@ -52,6 +54,7 @@ function setup() {
     viewport,
     tool,
     onSelectionChange,
+    onMoveSelection,
     onOverlayChange,
     getSelection: () => selection,
   }
@@ -158,5 +161,106 @@ describe('SelectionTool', () => {
     expect(tool.cancel()).toBe(false)
     expect(tool.pointerUp(pointer(100, 100))).toBe(false)
     expect(getSelection()).toEqual([])
+  })
+})
+
+describe('SelectionTool move', () => {
+  it('commits a single move on pointerup with the drag delta', () => {
+    const { scene, tool, onMoveSelection, onSelectionChange } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    tool.pointerDown(pointer(50, 50))
+    onSelectionChange.mockClear()
+    tool.pointerMove(pointer(80, 70))
+    expect(onMoveSelection).not.toHaveBeenCalled()
+    tool.pointerUp(pointer(80, 70))
+    expect(onMoveSelection).toHaveBeenCalledTimes(1)
+    expect(onMoveSelection).toHaveBeenCalledWith({ x: 30, y: 20 })
+    expect(onSelectionChange).not.toHaveBeenCalled()
+  })
+
+  it('previews the moved nodes and reports the preview bounds while dragging', () => {
+    const { scene, tool } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    tool.pointerDown(pointer(50, 50))
+    expect(tool.previews.size).toBe(0)
+    tool.pointerMove(pointer(90, 60))
+    expect(tool.previews.get('a')).toEqual({
+      transform: translation(40, 10),
+      width: 100,
+      height: 100,
+    })
+    expect(tool.selectionBounds).toEqual({ x: 40, y: 10, width: 100, height: 100 })
+    tool.pointerUp(pointer(90, 60))
+    expect(tool.previews.size).toBe(0)
+    expect(tool.selectionBounds).toEqual({ x: 0, y: 0, width: 100, height: 100 })
+  })
+
+  it('treats a drag under the click threshold as a click', () => {
+    const { scene, tool, onMoveSelection, getSelection } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerMove(pointer(51, 52))
+    tool.pointerUp(pointer(51, 52))
+    expect(onMoveSelection).not.toHaveBeenCalled()
+    expect(getSelection()).toEqual(['a'])
+  })
+
+  it('locks the movement to the dominant axis with shift', () => {
+    const { scene, tool, onMoveSelection } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerMove(pointer(90, 60, { shiftKey: true }))
+    tool.pointerUp(pointer(90, 60, { shiftKey: true }))
+    expect(onMoveSelection).toHaveBeenCalledWith({ x: 40, y: 0 })
+  })
+
+  it('selects an unselected node on press and moves it afterwards', () => {
+    const { scene, tool, onMoveSelection, getSelection } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    scene.addNode(createRectangle('b', 300, 0))
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerUp(pointer(50, 50))
+    tool.pointerDown(pointer(350, 50))
+    expect(getSelection()).toEqual(['b'])
+    tool.pointerMove(pointer(370, 40))
+    tool.pointerUp(pointer(370, 40))
+    expect(onMoveSelection).toHaveBeenCalledWith({ x: 20, y: -10 })
+    expect(tool.previews.size).toBe(0)
+  })
+
+  it('moves the whole selection when pressing an already selected node', () => {
+    const { scene, tool, onMoveSelection, getSelection } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    scene.addNode(createRectangle('b', 300, 0))
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerUp(pointer(50, 50))
+    tool.pointerDown(pointer(350, 50, { shiftKey: true }))
+    tool.pointerUp(pointer(350, 50, { shiftKey: true }))
+    expect(getSelection()).toEqual(['a', 'b'])
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerMove(pointer(60, 70))
+    expect(tool.selectionBounds).toEqual({ x: 10, y: 20, width: 400, height: 100 })
+    tool.pointerUp(pointer(60, 70))
+    expect(onMoveSelection).toHaveBeenCalledWith({ x: 10, y: 20 })
+  })
+
+  it('drops the preview when the move is cancelled', () => {
+    const { scene, tool, onMoveSelection } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerMove(pointer(90, 60))
+    expect(tool.cancel()).toBe(true)
+    expect(tool.previews.size).toBe(0)
+    expect(tool.selectionBounds).toEqual({ x: 0, y: 0, width: 100, height: 100 })
+    expect(onMoveSelection).not.toHaveBeenCalled()
+  })
+
+  it('ignores pointer events of another pointer id', () => {
+    const { scene, tool, onMoveSelection } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerMove({ ...pointer(90, 60), pointerId: 2 })
+    tool.pointerUp({ ...pointer(90, 60), pointerId: 2 })
+    expect(onMoveSelection).not.toHaveBeenCalled()
   })
 })

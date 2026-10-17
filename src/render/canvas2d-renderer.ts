@@ -2,6 +2,7 @@ import { DEFAULT_RECTANGLE_FILL } from '../core/document/create-node'
 import type { NodeId, SceneNodeUnion, SceneReader, SolidPaint } from '../core/document/types'
 import { multiply, scaling, type Mat2D } from '../core/math/matrix'
 import { transformRect, type Rect } from '../core/math/rect'
+import { boxWorldTransform, type NodeBox } from '../core/transform'
 import type { Viewport } from '../core/viewport'
 import { collectVisibleNodes } from './culling'
 import type { Renderer } from './renderer'
@@ -16,6 +17,7 @@ export interface Canvas2DRendererOptions {
   getSelection: () => readonly NodeId[]
   getHoveredId?: () => NodeId | null
   getMarquee?: () => Rect | null
+  getPreviews?: () => ReadonlyMap<NodeId, NodeBox>
   getDraft?: () => Rect | null
 }
 
@@ -27,12 +29,14 @@ export class Canvas2DRenderer implements Renderer {
   #getSelection: () => readonly NodeId[]
   #getHoveredId: () => NodeId | null
   #getMarquee: () => Rect | null
+  #getPreviews: () => ReadonlyMap<NodeId, NodeBox>
   #getDraft: () => Rect | null
   #colors: ThemeColors
   #devicePixelRatio = 1
   #cssWidth = 1
   #cssHeight = 1
   #visibleNodes: SceneNodeUnion[] = []
+  #previews: ReadonlyMap<NodeId, NodeBox> = new Map()
   #dirty = false
   #frameHandle = 0
 
@@ -46,6 +50,7 @@ export class Canvas2DRenderer implements Renderer {
     this.#getSelection = options.getSelection
     this.#getHoveredId = options.getHoveredId ?? (() => null)
     this.#getMarquee = options.getMarquee ?? (() => null)
+    this.#getPreviews = options.getPreviews ?? (() => new Map())
     this.#getDraft = options.getDraft ?? (() => null)
     this.#colors = readThemeColors()
   }
@@ -74,6 +79,7 @@ export class Canvas2DRenderer implements Renderer {
   #draw = (): void => {
     const context = this.#context
     this.#dirty = false
+    this.#previews = this.#getPreviews()
     context.setTransform(1, 0, 0, 1, 0, 0)
     context.globalAlpha = 1
     context.fillStyle = this.#colors.canvas
@@ -93,11 +99,13 @@ export class Canvas2DRenderer implements Renderer {
 
   #drawNode(node: SceneNodeUnion, deviceViewport: Mat2D): void {
     const context = this.#context
+    const preview = this.#previews.get(node.id)
+    const box: NodeBox = preview ?? node
     const paint = node.fills[0]
-    this.#applyTransform(multiply(deviceViewport, this.#scene.getWorldTransform(node.id)))
+    this.#applyTransform(multiply(deviceViewport, this.#nodeWorldTransform(node, preview)))
     context.globalAlpha = node.opacity
     context.fillStyle = paint ? paintToCss(paint) : 'transparent'
-    this.#traceNodePath(node)
+    this.#traceNodePath(node, box.width, box.height)
     context.fill()
     context.globalAlpha = 1
   }
@@ -111,7 +119,7 @@ export class Canvas2DRenderer implements Renderer {
     context.strokeStyle = this.#colors.primary
     context.lineWidth = OUTLINE_SCREEN_PX / this.#viewport.zoom
     this.#applyTransform(multiply(deviceViewport, this.#scene.getWorldTransform(id)))
-    this.#traceNodePath(node)
+    this.#traceNodePath(node, node.width, node.height)
     context.stroke()
   }
 
@@ -122,8 +130,10 @@ export class Canvas2DRenderer implements Renderer {
     for (const id of this.#getSelection()) {
       const node = this.#scene.getNode(id)
       if (!node || !node.visible) continue
-      this.#applyTransform(multiply(deviceViewport, this.#scene.getWorldTransform(id)))
-      this.#traceNodePath(node)
+      const preview = this.#previews.get(id)
+      const box: NodeBox = preview ?? node
+      this.#applyTransform(multiply(deviceViewport, this.#nodeWorldTransform(node, preview)))
+      this.#traceNodePath(node, box.width, box.height)
       context.stroke()
     }
   }
@@ -162,12 +172,18 @@ export class Canvas2DRenderer implements Renderer {
     context.stroke()
   }
 
-  #traceNodePath(node: SceneNodeUnion): void {
+  #traceNodePath(node: SceneNodeUnion, width: number, height: number): void {
     const context = this.#context
-    const maxRadius = Math.min(node.width, node.height) * MAX_CORNER_RADIUS_FACTOR
+    const maxRadius = Math.min(width, height) * MAX_CORNER_RADIUS_FACTOR
     const radius = Math.max(0, Math.min(node.cornerRadius, maxRadius))
     context.beginPath()
-    context.roundRect(0, 0, node.width, node.height, radius)
+    context.roundRect(0, 0, width, height, radius)
+  }
+
+  #nodeWorldTransform(node: SceneNodeUnion, preview: NodeBox | undefined): Mat2D {
+    return preview
+      ? boxWorldTransform(this.#scene, node, preview)
+      : this.#scene.getWorldTransform(node.id)
   }
 
   #viewportWorldBounds(): Rect {

@@ -1,6 +1,7 @@
 import type { NodeId, SceneReader } from '../core/document/types'
 import type { Vec2 } from '../core/math/matrix'
 import type { Rect } from '../core/math/rect'
+import type { NodeBox } from '../core/transform'
 import type { Viewport } from '../core/viewport'
 import { collectSelectableIds } from './hit-testing'
 import { rectangleFromDrag, type RectangleDragModifiers } from './rectangle-draft'
@@ -15,8 +16,17 @@ const SELECT_ALL_KEY_CODE = 'KeyA'
 const UNDO_KEY_CODE = 'KeyZ'
 const REDO_ALTERNATE_KEY_CODE = 'KeyY'
 const ZOOM_RESET_TARGET = 1
+const NUDGE_STEP_PX = 1
+const NUDGE_LARGE_STEP_PX = 10
 const MIDDLE_MOUSE_BUTTON = 1
 const PRIMARY_MOUSE_BUTTON = 0
+
+const NUDGE_DELTAS: ReadonlyMap<string, Vec2> = new Map([
+  ['ArrowLeft', { x: -1, y: 0 }],
+  ['ArrowRight', { x: 1, y: 0 }],
+  ['ArrowUp', { x: 0, y: -1 }],
+  ['ArrowDown', { x: 0, y: 1 }],
+])
 
 const EDITABLE_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT'])
 
@@ -26,6 +36,7 @@ export interface CanvasControllerOptions {
   getSelection: () => readonly NodeId[]
   onToolChange: (tool: ToolId) => void
   onSelectionChange: (ids: readonly NodeId[]) => void
+  onMoveSelection: (delta: Vec2) => void
   onCreateRectangle: (bounds: Rect) => void
   onDraftChange: () => void
   onOverlayChange: () => void
@@ -59,6 +70,7 @@ export class CanvasController {
       viewport,
       getSelection: options.getSelection,
       onSelectionChange: options.onSelectionChange,
+      onMoveSelection: options.onMoveSelection,
       onOverlayChange: options.onOverlayChange,
     })
     canvas.addEventListener('wheel', this.#onWheel, { passive: false })
@@ -84,6 +96,14 @@ export class CanvasController {
 
   get marquee(): Rect | null {
     return this.#selectionTool.marquee
+  }
+
+  get previews(): ReadonlyMap<NodeId, NodeBox> {
+    return this.#selectionTool.previews
+  }
+
+  get selectionBounds(): Rect | null {
+    return this.#selectionTool.selectionBounds
   }
 
   setTool(tool: ToolId): void {
@@ -234,6 +254,13 @@ export class CanvasController {
     if (event.shiftKey && event.code === ZOOM_RESET_KEY_CODE) {
       event.preventDefault()
       this.#resetZoom()
+      return
+    }
+    const nudge = NUDGE_DELTAS.get(event.code)
+    if (nudge) {
+      event.preventDefault()
+      const step = event.shiftKey ? NUDGE_LARGE_STEP_PX : NUDGE_STEP_PX
+      this.#options.onMoveSelection({ x: nudge.x * step, y: nudge.y * step })
       return
     }
     const tool = TOOL_HOTKEYS.get(event.code)

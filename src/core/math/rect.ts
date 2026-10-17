@@ -1,4 +1,4 @@
-import type { Mat2D } from './matrix'
+import type { Mat2D, Vec2 } from './matrix'
 
 export interface Rect {
   x: number
@@ -18,6 +18,26 @@ export function normalizeRect(rect: Rect): Rect {
     width: Math.abs(rect.width),
     height: Math.abs(rect.height),
   }
+}
+
+export function translateRect(rect: Rect, delta: Vec2): Rect {
+  return { x: rect.x + delta.x, y: rect.y + delta.y, width: rect.width, height: rect.height }
+}
+
+export function boundsOfRects(rects: readonly Rect[]): Rect | null {
+  const first = rects[0]
+  if (!first) return null
+  let minX = first.x
+  let minY = first.y
+  let maxX = first.x + first.width
+  let maxY = first.y + first.height
+  for (const rect of rects) {
+    minX = Math.min(minX, rect.x)
+    minY = Math.min(minY, rect.y)
+    maxX = Math.max(maxX, rect.x + rect.width)
+    maxY = Math.max(maxY, rect.y + rect.height)
+  }
+  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
 }
 
 export function transformRect(matrix: Mat2D, rect: Rect): Rect {

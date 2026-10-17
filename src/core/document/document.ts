@@ -1,5 +1,6 @@
 import { multiply, type Mat2D } from '../math/matrix'
 import type { NodeId, SceneNodeUnion } from './types'
+import type { NodeBox } from '../transform'
 
 export class Document {
   #nodes = new Map<NodeId, SceneNodeUnion>()
@@ -32,6 +33,15 @@ export class Document {
 
   removeNode(id: NodeId): void {
     if (!this.#removeSubtree(id)) return
+    this.#markChanged()
+  }
+
+  setNodeBox(id: NodeId, box: NodeBox): void {
+    const node = this.#nodes.get(id)
+    if (!node) return
+    node.transform = box.transform
+    node.width = box.width
+    node.height = box.height
     this.#markChanged()
   }
 
