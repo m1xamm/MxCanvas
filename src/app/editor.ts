@@ -1,4 +1,6 @@
 import { MoveNodesCommand } from '../core/commands/move-nodes-command'
+import { ResizeNodesCommand } from '../core/commands/resize-nodes-command'
+import type { NodeBoxChange } from '../core/commands/node-box-change'
 import { createRectangleNode } from '../core/document/create-node'
 import { Document } from '../core/document/document'
 import type { RectangleNode } from '../core/document/types'
@@ -21,6 +23,11 @@ export function moveSelection(delta: Vec2): void {
   const ids = selectionStore.get()
   if (ids.length === 0 || (delta.x === 0 && delta.y === 0)) return
   history.execute(new MoveNodesCommand(scene, ids, delta))
+}
+
+export function resizeSelection(changes: readonly NodeBoxChange[]): void {
+  if (changes.length === 0) return
+  history.execute(new ResizeNodesCommand(scene, changes))
 }
 
 export function createRectangle(bounds: Rect): RectangleNode {

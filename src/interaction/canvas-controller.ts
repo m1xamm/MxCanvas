@@ -1,4 +1,5 @@
 import type { NodeId, SceneReader } from '../core/document/types'
+import type { NodeBoxChange } from '../core/commands/node-box-change'
 import type { Vec2 } from '../core/math/matrix'
 import type { Rect } from '../core/math/rect'
 import type { NodeBox } from '../core/transform'
@@ -37,6 +38,7 @@ export interface CanvasControllerOptions {
   onToolChange: (tool: ToolId) => void
   onSelectionChange: (ids: readonly NodeId[]) => void
   onMoveSelection: (delta: Vec2) => void
+  onResizeSelection: (changes: readonly NodeBoxChange[]) => void
   onCreateRectangle: (bounds: Rect) => void
   onDraftChange: () => void
   onOverlayChange: () => void
@@ -71,6 +73,7 @@ export class CanvasController {
       getSelection: options.getSelection,
       onSelectionChange: options.onSelectionChange,
       onMoveSelection: options.onMoveSelection,
+      onResizeSelection: options.onResizeSelection,
       onOverlayChange: options.onOverlayChange,
     })
     canvas.addEventListener('wheel', this.#onWheel, { passive: false })
@@ -353,7 +356,7 @@ export class CanvasController {
       return
     }
     this.#canvas.style.cursor =
-      this.#tool === 'move' ? this.#selectionTool.cursorAt() : 'default'
+      this.#tool === 'move' ? this.#selectionTool.cursorAt(this.#pointer) : 'default'
   }
 
   #viewportCenter(): Vec2 {

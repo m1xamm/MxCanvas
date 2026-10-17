@@ -7,7 +7,7 @@ import { CanvasController } from '../interaction/canvas-controller'
 import { selectionStore, setSelection } from '../interaction/selection'
 import type { ToolId } from '../interaction/tools'
 import { Canvas2DRenderer } from '../render/canvas2d-renderer'
-import { createRectangle, history, moveSelection, scene } from './editor'
+import { createRectangle, history, moveSelection, resizeSelection, scene } from './editor'
 import { observeDevicePixelRatio } from './observe-device-pixel-ratio'
 import { setTool, setZoom } from './store'
 
@@ -41,6 +41,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       getHoveredId: () => controller?.hoveredId ?? null,
       getMarquee: () => controller?.marquee ?? null,
       getPreviews: () => controller?.previews ?? NO_PREVIEWS,
+      getSelectionBounds: () => controller?.selectionBounds ?? null,
       getDraft: () => controller?.draft ?? null,
     })
     const createdController = new CanvasController(canvas, viewport, {
@@ -50,6 +51,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       onToolChange: setTool,
       onSelectionChange: setSelection,
       onMoveSelection: moveSelection,
+      onResizeSelection: resizeSelection,
       onCreateRectangle: (bounds) => {
         const node = createRectangle(bounds)
         history.execute(new CreateNodeCommand(scene, node))

@@ -1,15 +1,10 @@
 import type { NodeId } from '../document/types'
 import type { Vec2 } from '../math/matrix'
 import { translateRect } from '../math/rect'
-import { nodeBox, nodeWorldRect, worldRectToBox, type NodeBox } from '../transform'
+import { nodeBox, nodeWorldRect, worldRectToBox } from '../transform'
 import type { Document } from '../document/document'
 import type { Command } from './command'
-
-export interface NodeBoxChange {
-  id: NodeId
-  from: NodeBox
-  to: NodeBox
-}
+import { applyNodeBoxChanges, type NodeBoxChange } from './node-box-change'
 
 export class MoveNodesCommand implements Command {
   readonly label = 'move nodes'
@@ -31,11 +26,11 @@ export class MoveNodesCommand implements Command {
   }
 
   execute(): void {
-    for (const change of this.#changes) this.#document.setNodeBox(change.id, change.to)
+    applyNodeBoxChanges(this.#document, this.#changes, 'to')
   }
 
   undo(): void {
-    for (const change of this.#changes) this.#document.setNodeBox(change.id, change.from)
+    applyNodeBoxChanges(this.#document, this.#changes, 'from')
   }
 }
 

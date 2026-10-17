@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { NodeBoxChange } from '../core/commands/node-box-change'
 import { Document } from '../core/document/document'
 import type { NodeId, RectangleNode } from '../core/document/types'
 import { translation, type Vec2 } from '../core/math/matrix'
@@ -139,6 +140,7 @@ function setup(initialTool: ToolId = 'move', scene: Document = new Document()) {
   const viewport = new Viewport()
   const onToolChange = vi.fn<(tool: ToolId) => void>()
   const onMoveSelection = vi.fn<(delta: Vec2) => void>()
+  const onResizeSelection = vi.fn<(changes: readonly NodeBoxChange[]) => void>()
   const onCreateRectangle = vi.fn<(bounds: Rect) => void>()
   const onDraftChange = vi.fn<() => void>()
   const onOverlayChange = vi.fn<() => void>()
@@ -155,6 +157,7 @@ function setup(initialTool: ToolId = 'move', scene: Document = new Document()) {
     onToolChange,
     onSelectionChange,
     onMoveSelection,
+    onResizeSelection,
     onCreateRectangle,
     onDraftChange,
     onOverlayChange,
@@ -169,6 +172,7 @@ function setup(initialTool: ToolId = 'move', scene: Document = new Document()) {
     onToolChange,
     onSelectionChange,
     onMoveSelection,
+    onResizeSelection,
     onCreateRectangle,
     onDraftChange,
     onOverlayChange,
@@ -455,6 +459,25 @@ describe('CanvasController', () => {
       createKeyEvent({ code: 'ArrowRight', target: input as unknown as EventTarget }),
     )
     expect(onMoveSelection).not.toHaveBeenCalled()
+    controller.dispose()
+  })
+
+  it('resizes the selection when dragging a handle', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle('a', 0, 0))
+    const { canvas, onResizeSelection, controller } = setup('move', scene)
+    const at = (clientX: number, clientY: number) =>
+      createPointerEvent({ button: 0, pointerId: 1, clientX, clientY })
+    canvas.dispatch('pointerdown', at(150, 100))
+    canvas.dispatch('pointerup', at(150, 100))
+    canvas.dispatch('pointermove', at(200, 150))
+    expect(canvas.style.cursor).toBe('nwse-resize')
+    canvas.dispatch('pointerdown', at(200, 150))
+    canvas.dispatch('pointermove', at(250, 200))
+    canvas.dispatch('pointerup', at(250, 200))
+    expect(onResizeSelection).toHaveBeenCalledTimes(1)
+    expect(onResizeSelection.mock.calls[0]?.[0]?.[0]?.to.width).toBe(150)
+    expect(onResizeSelection.mock.calls[0]?.[0]?.[0]?.to.height).toBe(150)
     controller.dispose()
   })
 })

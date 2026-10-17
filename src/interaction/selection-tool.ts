@@ -1,10 +1,18 @@
 import type { NodeId, SceneReader } from '../core/document/types'
+import type { NodeBoxChange } from '../core/commands/node-box-change'
 import type { Vec2 } from '../core/math/matrix'
-import { boundsOfRects, normalizeRect, translateRect, type Rect } from '../core/math/rect'
-import { nodeWorldRect, worldRectToBox, type NodeBox } from '../core/transform'
+import { boundsOfRects, normalizeRect, translateRect, transformRect, type Rect } from '../core/math/rect'
+import { nodeBox, nodeWorldRect, worldRectToBox, type NodeBox } from '../core/transform'
 import type { Viewport } from '../core/viewport'
 import { isDrag, moveDelta } from './gesture'
 import { collectNodesInRect, hitTest } from './hit-testing'
+import {
+  handleAtPoint,
+  handleCursor,
+  mapRectWithBounds,
+  resizeBounds,
+  type ResizeHandleId,
+} from './resize'
 import { selectionOnPress, toggleSelection, unionSelection } from './selection'
 
 export interface SelectionPointerInput {
@@ -20,6 +28,7 @@ export interface SelectionToolOptions {
   getSelection: () => readonly NodeId[]
   onSelectionChange: (ids: readonly NodeId[]) => void
   onMoveSelection: (delta: Vec2) => void
+  onResizeSelection: (changes: readonly NodeBoxChange[]) => void
   onOverlayChange: () => void
 }
 
@@ -47,7 +56,18 @@ interface MoveGesture {
   moved: boolean
 }
 
-type Gesture = MarqueeGesture | MoveGesture
+interface ResizeGesture {
+  kind: 'resize'
+  pointerId: number
+  handle: ResizeHandleId
+  startScreen: Vec2
+  startBounds: Rect
+  rawBounds: Rect
+  origins: readonly NodeRect[]
+  moved: boolean
+}
+
+type Gesture = MarqueeGesture | MoveGesture | ResizeGesture
 
 const NO_PREVIEWS: ReadonlyMap<NodeId, NodeBox> = new Map<NodeId, NodeBox>()
 
@@ -84,6 +104,22 @@ export class SelectionTool {
 
   pointerDown(input: SelectionPointerInput): void {
     this.#setHoveredId(null)
+    const selection = this.#options.getSelection()
+    const bounds = this.#selectedRect()
+    const handle = bounds ? handleAtPoint(this.#screenRect(bounds), input.screen) : null
+    if (bounds && handle) {
+      this.#gesture = {
+        kind: 'resize',
+        pointerId: input.pointerId,
+        handle,
+        startScreen: input.screen,
+        startBounds: bounds,
+        rawBounds: bounds,
+        origins: this.#nodeRects(selection),
+        moved: false,
+      }
+      return
+    }
     const world = this.#viewport.screenToWorld(input.screen)
     const hit = hitTest(this.#scene, world)
     if (!hit) {
@@ -93,12 +129,11 @@ export class SelectionTool {
         pointerId: input.pointerId,
         start: world,
         rect: { x: world.x, y: world.y, width: 0, height: 0 },
-        baseSelection: this.#options.getSelection(),
+        baseSelection: selection,
       }
       this.#options.onOverlayChange()
       return
     }
-    const selection = this.#options.getSelection()
     const next = input.shiftKey
       ? toggleSelection(selection, hit.id)
       : selectionOnPress(selection, hit.id)
@@ -128,6 +163,10 @@ export class SelectionTool {
       this.#updateMove(gesture, world, input)
       return true
     }
+    if (gesture.kind === 'resize') {
+      this.#updateResize(gesture, world, input)
+      return true
+    }
     gesture.rect = normalizeRect({
       x: gesture.start.x,
       y: gesture.start.y,
@@ -145,6 +184,8 @@ export class SelectionTool {
     this.#clearPreview()
     if (gesture.kind === 'move') {
       this.#finishMove(gesture)
+    } else if (gesture.kind === 'resize') {
+      this.#finishResize(gesture)
     } else {
       this.#finishMarquee(gesture, input)
     }
@@ -164,8 +205,13 @@ export class SelectionTool {
     this.#setHoveredId(null)
   }
 
-  cursorAt(): string {
-    return 'default'
+  cursorAt(screen: Vec2): string {
+    const gesture = this.#gesture
+    if (gesture?.kind === 'resize') return handleCursor(gesture.handle)
+    const bounds = this.#selectedRect()
+    if (!bounds) return 'default'
+    const handle = handleAtPoint(this.#screenRect(bounds), screen)
+    return handle ? handleCursor(handle) : 'default'
   }
 
   #updateMove(gesture: MoveGesture, world: Vec2, input: { screen: Vec2; shiftKey: boolean }): void {
@@ -179,10 +225,42 @@ export class SelectionTool {
     this.#options.onOverlayChange()
   }
 
+  #updateResize(gesture: ResizeGesture, world: Vec2, input: SelectionPointerInput): void {
+    if (!gesture.moved && !isDrag(gesture.startScreen, input.screen)) return
+    gesture.moved = true
+    gesture.rawBounds = resizeBounds({
+      bounds: gesture.startBounds,
+      handle: gesture.handle,
+      pointer: world,
+      proportional: input.shiftKey,
+      fromCenter: input.altKey,
+    })
+    this.#previews = resizedBoxesFor(
+      this.#scene,
+      gesture.origins,
+      gesture.startBounds,
+      gesture.rawBounds,
+    )
+    this.#previewBounds = normalizeRect(gesture.rawBounds)
+    this.#options.onOverlayChange()
+  }
+
   #finishMove(gesture: MoveGesture): void {
     if (!gesture.moved) return
     if (gesture.delta.x === 0 && gesture.delta.y === 0) return
     this.#options.onMoveSelection(gesture.delta)
+  }
+
+  #finishResize(gesture: ResizeGesture): void {
+    if (!gesture.moved) return
+    const changes: NodeBoxChange[] = []
+    const boxes = resizedBoxesFor(this.#scene, gesture.origins, gesture.startBounds, gesture.rawBounds)
+    for (const [id, to] of boxes) {
+      const node = this.#scene.getNode(id)
+      if (!node) continue
+      changes.push({ id, from: nodeBox(node), to })
+    }
+    if (changes.length > 0) this.#options.onResizeSelection(changes)
   }
 
   #finishMarquee(gesture: MarqueeGesture, input: SelectionPointerInput): void {
@@ -206,6 +284,10 @@ export class SelectionTool {
 
   #selectedRect(): Rect | null {
     return boundsOfRects(this.#nodeRects(this.#options.getSelection()).map((entry) => entry.rect))
+  }
+
+  #screenRect(bounds: Rect): Rect {
+    return transformRect(this.#viewport.matrix(), bounds)
   }
 
   #clearPreview(): void {
@@ -237,4 +319,19 @@ function previewsFor(
     previews.set(origin.id, worldRectToBox(scene, node, translateRect(origin.rect, delta)))
   }
   return previews
+}
+
+function resizedBoxesFor(
+  scene: SceneReader,
+  origins: readonly NodeRect[],
+  from: Rect,
+  to: Rect,
+): Map<NodeId, NodeBox> {
+  const boxes = new Map<NodeId, NodeBox>()
+  for (const origin of origins) {
+    const node = scene.getNode(origin.id)
+    if (!node) continue
+    boxes.set(origin.id, worldRectToBox(scene, node, mapRectWithBounds(origin.rect, from, to)))
+  }
+  return boxes
 }

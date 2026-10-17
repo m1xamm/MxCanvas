@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { NodeBoxChange } from '../core/commands/node-box-change'
 import { Document } from '../core/document/document'
 import type { NodeId, RectangleNode } from '../core/document/types'
 import { translation, type Vec2 } from '../core/math/matrix'
@@ -23,12 +24,16 @@ function createRectangle(id: string, x: number, y: number, size = 100): Rectangl
   }
 }
 
-function pointer(x: number, y: number, modifiers: { shiftKey?: boolean } = {}): SelectionPointerInput {
+function pointer(
+  x: number,
+  y: number,
+  modifiers: { shiftKey?: boolean; altKey?: boolean } = {},
+): SelectionPointerInput {
   return {
     pointerId: 1,
     screen: { x, y },
     shiftKey: modifiers.shiftKey ?? false,
-    altKey: false,
+    altKey: modifiers.altKey ?? false,
   }
 }
 
@@ -40,6 +45,7 @@ function setup() {
     selection = ids
   })
   const onMoveSelection = vi.fn<(delta: Vec2) => void>()
+  const onResizeSelection = vi.fn<(changes: readonly NodeBoxChange[]) => void>()
   const onOverlayChange = vi.fn<() => void>()
   const tool = new SelectionTool({
     scene,
@@ -47,6 +53,7 @@ function setup() {
     getSelection: () => selection,
     onSelectionChange,
     onMoveSelection,
+    onResizeSelection,
     onOverlayChange,
   })
   return {
@@ -55,6 +62,7 @@ function setup() {
     tool,
     onSelectionChange,
     onMoveSelection,
+    onResizeSelection,
     onOverlayChange,
     getSelection: () => selection,
   }
@@ -262,5 +270,153 @@ describe('SelectionTool move', () => {
     tool.pointerMove({ ...pointer(90, 60), pointerId: 2 })
     tool.pointerUp({ ...pointer(90, 60), pointerId: 2 })
     expect(onMoveSelection).not.toHaveBeenCalled()
+  })
+})
+
+describe('SelectionTool resize', () => {
+  it('starts resizing from a handle press and commits one change on pointerup', () => {
+    const { scene, tool, onSelectionChange, onResizeSelection, getSelection } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerUp(pointer(50, 50))
+    expect(getSelection()).toEqual(['a'])
+    onSelectionChange.mockClear()
+    tool.pointerDown(pointer(100, 100))
+    expect(onSelectionChange).not.toHaveBeenCalled()
+    expect(tool.previews.size).toBe(0)
+    tool.pointerMove(pointer(150, 140))
+    expect(tool.previews.get('a')).toEqual({
+      transform: translation(0, 0),
+      width: 150,
+      height: 140,
+    })
+    expect(tool.selectionBounds).toEqual({ x: 0, y: 0, width: 150, height: 140 })
+    tool.pointerUp(pointer(150, 140))
+    expect(onResizeSelection).toHaveBeenCalledTimes(1)
+    expect(onResizeSelection.mock.calls[0]?.[0]).toEqual([
+      {
+        id: 'a',
+        from: { transform: translation(0, 0), width: 100, height: 100 },
+        to: { transform: translation(0, 0), width: 150, height: 140 },
+      },
+    ])
+    expect(tool.previews.size).toBe(0)
+    expect(tool.selectionBounds).toEqual({ x: 0, y: 0, width: 100, height: 100 })
+  })
+
+  it('keeps the aspect ratio when shift is held', () => {
+    const { scene, tool, onResizeSelection } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerUp(pointer(50, 50))
+    tool.pointerDown(pointer(100, 100))
+    tool.pointerMove(pointer(150, 200, { shiftKey: true }))
+    expect(tool.selectionBounds).toEqual({ x: 0, y: 0, width: 200, height: 200 })
+    tool.pointerUp(pointer(150, 200, { shiftKey: true }))
+    expect(onResizeSelection.mock.calls[0]?.[0]?.[0]?.to.width).toBe(200)
+    expect(onResizeSelection.mock.calls[0]?.[0]?.[0]?.to.height).toBe(200)
+  })
+
+  it('mirrors the node when the dragged edge crosses the opposite one', () => {
+    const { scene, tool, onResizeSelection } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerUp(pointer(50, 50))
+    tool.pointerDown(pointer(100, 50))
+    tool.pointerMove(pointer(-50, 50))
+    expect(tool.selectionBounds).toEqual({ x: -50, y: 0, width: 50, height: 100 })
+    expect(tool.previews.get('a')).toEqual({
+      transform: translation(-50, 0),
+      width: 50,
+      height: 100,
+    })
+    tool.pointerUp(pointer(-50, 50))
+    expect(onResizeSelection.mock.calls[0]?.[0]?.[0]?.to).toEqual({
+      transform: translation(-50, 0),
+      width: 50,
+      height: 100,
+    })
+  })
+
+  it('scales the whole selection proportionally inside the bounds', () => {
+    const { scene, tool, onResizeSelection } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    scene.addNode(createRectangle('b', 200, 0))
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerUp(pointer(50, 50))
+    tool.pointerDown(pointer(250, 50, { shiftKey: true }))
+    tool.pointerUp(pointer(250, 50, { shiftKey: true }))
+    tool.pointerDown(pointer(300, 100))
+    tool.pointerMove(pointer(600, 200))
+    expect(tool.previews.get('a')).toEqual({
+      transform: translation(0, 0),
+      width: 200,
+      height: 200,
+    })
+    expect(tool.previews.get('b')).toEqual({
+      transform: translation(400, 0),
+      width: 200,
+      height: 200,
+    })
+    tool.pointerUp(pointer(600, 200))
+    const changes = onResizeSelection.mock.calls[0]?.[0]
+    expect(changes?.length).toBe(2)
+    expect(changes?.[1]?.id).toBe('b')
+    expect(changes?.[1]?.to).toEqual({
+      transform: translation(400, 0),
+      width: 200,
+      height: 200,
+    })
+  })
+
+  it('scales from the center when alt is held', () => {
+    const { scene, tool } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerUp(pointer(50, 50))
+    tool.pointerDown(pointer(100, 100))
+    tool.pointerMove(pointer(150, 150, { altKey: true }))
+    expect(tool.selectionBounds).toEqual({ x: -50, y: -50, width: 200, height: 200 })
+  })
+
+  it('treats a handle drag under the click threshold as a click', () => {
+    const { scene, tool, onResizeSelection, getSelection } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerUp(pointer(50, 50))
+    tool.pointerDown(pointer(100, 100))
+    tool.pointerMove(pointer(101, 101))
+    tool.pointerUp(pointer(101, 101))
+    expect(onResizeSelection).not.toHaveBeenCalled()
+    expect(getSelection()).toEqual(['a'])
+    expect(tool.selectionBounds).toEqual({ x: 0, y: 0, width: 100, height: 100 })
+  })
+
+  it('drops the resize preview when the gesture is cancelled', () => {
+    const { scene, tool, onResizeSelection } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerUp(pointer(50, 50))
+    tool.pointerDown(pointer(100, 100))
+    tool.pointerMove(pointer(150, 140))
+    expect(tool.cancel()).toBe(true)
+    expect(tool.previews.size).toBe(0)
+    expect(tool.selectionBounds).toEqual({ x: 0, y: 0, width: 100, height: 100 })
+    expect(onResizeSelection).not.toHaveBeenCalled()
+  })
+
+  it('reports resize cursors over the handles and the default cursor elsewhere', () => {
+    const { scene, tool } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    expect(tool.cursorAt({ x: 100, y: 100 })).toBe('default')
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerUp(pointer(50, 50))
+    expect(tool.cursorAt({ x: 100, y: 100 })).toBe('nwse-resize')
+    expect(tool.cursorAt({ x: 50, y: 0 })).toBe('ns-resize')
+    expect(tool.cursorAt({ x: 0, y: 50 })).toBe('ew-resize')
+    expect(tool.cursorAt({ x: 50, y: 50 })).toBe('default')
+    tool.pointerDown(pointer(100, 100))
+    tool.pointerMove(pointer(150, 150))
+    expect(tool.cursorAt({ x: 250, y: 250 })).toBe('nwse-resize')
   })
 })

@@ -6,6 +6,7 @@ import { boxWorldTransform, type NodeBox } from '../core/transform'
 import type { Viewport } from '../core/viewport'
 import { collectVisibleNodes } from './culling'
 import type { Renderer } from './renderer'
+import { drawSelectionOverlay } from './selection-overlay'
 import { readThemeColors, type ThemeColors } from './theme-colors'
 
 const OUTLINE_SCREEN_PX = 1
@@ -18,6 +19,7 @@ export interface Canvas2DRendererOptions {
   getHoveredId?: () => NodeId | null
   getMarquee?: () => Rect | null
   getPreviews?: () => ReadonlyMap<NodeId, NodeBox>
+  getSelectionBounds?: () => Rect | null
   getDraft?: () => Rect | null
 }
 
@@ -30,6 +32,7 @@ export class Canvas2DRenderer implements Renderer {
   #getHoveredId: () => NodeId | null
   #getMarquee: () => Rect | null
   #getPreviews: () => ReadonlyMap<NodeId, NodeBox>
+  #getSelectionBounds: () => Rect | null
   #getDraft: () => Rect | null
   #colors: ThemeColors
   #devicePixelRatio = 1
@@ -51,6 +54,7 @@ export class Canvas2DRenderer implements Renderer {
     this.#getHoveredId = options.getHoveredId ?? (() => null)
     this.#getMarquee = options.getMarquee ?? (() => null)
     this.#getPreviews = options.getPreviews ?? (() => new Map())
+    this.#getSelectionBounds = options.getSelectionBounds ?? (() => null)
     this.#getDraft = options.getDraft ?? (() => null)
     this.#colors = readThemeColors()
   }
@@ -95,6 +99,13 @@ export class Canvas2DRenderer implements Renderer {
     this.#drawSelectionOutline(deviceViewport)
     this.#drawMarquee()
     this.#drawDraft(deviceViewport)
+    drawSelectionOverlay({
+      context: this.#context,
+      viewportMatrix: this.#viewport.matrix(),
+      bounds: this.#getSelectionBounds(),
+      colors: this.#colors,
+      devicePixelRatio: this.#devicePixelRatio,
+    })
   }
 
   #drawNode(node: SceneNodeUnion, deviceViewport: Mat2D): void {
