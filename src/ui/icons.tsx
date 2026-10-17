@@ -87,6 +87,86 @@ function HandIcon() {
   )
 }
 
+function ScaleIcon() {
+  return (
+    <IconBase>
+      <path d="M4.5 19.5l9-9" />
+      <path d="M13 4.5h6.5V11" />
+      <path d="M4.5 13v6.5H11" />
+    </IconBase>
+  )
+}
+
+function SectionIcon() {
+  return (
+    <IconBase>
+      <rect x="4" y="6.5" width="16" height="11" rx="2" stroke-dasharray="3 3" />
+    </IconBase>
+  )
+}
+
+function SliceIcon() {
+  return (
+    <IconBase>
+      <circle cx="7" cy="17.5" r="2" />
+      <circle cx="17" cy="17.5" r="2" />
+      <path d="M8.4 16 17 5.5M15.6 16 7 5.5" />
+    </IconBase>
+  )
+}
+
+function ArrowIcon() {
+  return (
+    <IconBase>
+      <path d="M5.5 18.5 18.5 5.5" />
+      <path d="M12.5 5.5h6v6" />
+    </IconBase>
+  )
+}
+
+function PolygonIcon() {
+  return (
+    <IconBase>
+      <path d="M12 4.5 20 10.3 16.9 19.5H7.1L4 10.3z" />
+    </IconBase>
+  )
+}
+
+function StarIcon() {
+  return (
+    <IconBase>
+      <path d="M12 4.5l2.35 4.9 5.15.6-3.85 3.6 1 5.4-4.65-2.55L7.35 19l1-5.4L4.5 10l5.15-.6z" />
+    </IconBase>
+  )
+}
+
+function PencilIcon() {
+  return (
+    <IconBase>
+      <path d="M5 19l1.1-4.6 8.6-8.6 3.5 3.5-8.6 8.6z" />
+      <path d="M13.5 7l3.5 3.5" />
+    </IconBase>
+  )
+}
+
+export function ChevronIcon() {
+  return (
+    <svg
+      width="8"
+      height="8"
+      viewBox="0 0 8 8"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.3"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M1.5 3 4 5.5 6.5 3" />
+    </svg>
+  )
+}
+
 export function AppIcon() {
   return (
     <IconBase>
@@ -106,11 +186,18 @@ export function CloseIcon() {
 
 export const TOOL_ICONS: Record<ToolId, () => JSX.Element> = {
   move: MoveIcon,
-  frame: FrameIcon,
-  rectangle: RectangleIcon,
-  ellipse: EllipseIcon,
-  line: LineIcon,
-  pen: PenIcon,
-  text: TextIcon,
   hand: HandIcon,
+  scale: ScaleIcon,
+  frame: FrameIcon,
+  section: SectionIcon,
+  slice: SliceIcon,
+  rectangle: RectangleIcon,
+  line: LineIcon,
+  arrow: ArrowIcon,
+  ellipse: EllipseIcon,
+  polygon: PolygonIcon,
+  star: StarIcon,
+  pen: PenIcon,
+  pencil: PencilIcon,
+  text: TextIcon,
 }

@@ -9,7 +9,7 @@ import { appStore, setTool } from './store'
 import { useStoreValue } from './use-store-value'
 
 export function App() {
-  const { tool, zoom } = useStoreValue(appStore)
+  const { tool, zoom, lastToolByGroup } = useStoreValue(appStore)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const menuButtonRef = useRef<HTMLButtonElement | null>(null)
 
@@ -27,7 +27,11 @@ export function App() {
       <LeftPanel onOpenSettings={() => setSettingsOpen(true)} menuButtonRef={menuButtonRef} />
       <CanvasStage tool={tool} inputBlocked={settingsOpen} />
       <RightPanel zoom={zoom} />
-      <Toolbar activeTool={tool} onSelectTool={handleSelectTool} />
+      <Toolbar
+        activeTool={tool}
+        lastToolByGroup={lastToolByGroup}
+        onSelectTool={handleSelectTool}
+      />
       {settingsOpen && <SettingsDialog onClose={closeSettings} />}
     </div>
   )
