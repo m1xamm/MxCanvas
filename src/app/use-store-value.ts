@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'preact/hooks'
-import type { Store } from './store'
+import type { Store } from '../core/store'
 
 export function useStoreValue<T>(store: Store<T>): T {
   const [value, setValue] = useState(store.get())

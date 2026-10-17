@@ -91,7 +91,6 @@
 }
 
 .segmented-button {
-  flex: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -99,6 +98,10 @@
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-on-surface-variant);
+}
+
+.segmented-button--stretch {
+  flex: 1;
 }
 
 .segmented-button:hover:not(.is-active) {
