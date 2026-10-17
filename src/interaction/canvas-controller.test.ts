@@ -70,6 +70,7 @@ function createWheelEvent(init: {
 
 function createKeyEvent(init: {
   code: string
+  key?: string
   shiftKey?: boolean
   ctrlKey?: boolean
   metaKey?: boolean
@@ -79,6 +80,7 @@ function createKeyEvent(init: {
 }) {
   return {
     code: init.code,
+    key: init.key ?? '',
     shiftKey: init.shiftKey ?? false,
     ctrlKey: init.ctrlKey ?? false,
     metaKey: init.metaKey ?? false,
@@ -153,6 +155,17 @@ describe('CanvasController', () => {
     expect(onToolChange).toHaveBeenCalledWith('hand')
     expect(canvas.style.cursor).toBe('grab')
     fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyV' }))
+    expect(onToolChange).toHaveBeenCalledWith('move')
+    expect(canvas.style.cursor).toBe('default')
+    controller.dispose()
+  })
+
+  it('switches tools on the Russian layout via physical key codes', () => {
+    const { fakeWindow, canvas, onToolChange, controller } = setup()
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyH', key: 'р' }))
+    expect(onToolChange).toHaveBeenCalledWith('hand')
+    expect(canvas.style.cursor).toBe('grab')
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyV', key: 'м' }))
     expect(onToolChange).toHaveBeenCalledWith('move')
     expect(canvas.style.cursor).toBe('default')
     controller.dispose()
