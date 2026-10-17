@@ -33,3 +33,14 @@
 - UI: language switch moved off the right panel (which now keeps only zoom) into a Settings modal opened from a new main menu button (MxCanvas icon) at the top of the left panel; popup menu with the Settings item; dialog in cluster style (22px outer radius, rows as a vertical Cluster) with a Language row (Русский / English) and a close button.
 - Undo/redo hotkeys by physical code: Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, Ctrl+Y; ignored in text inputs and while the settings dialog is open.
 - Tests: 79 passing (document ops, world transforms, history, rect math, culling, rectangle drag math, controller gestures and hotkeys). Not verified live: drawing feel, draft preview look, settings dialog look.
+
+## Stage 3 — Hit testing, selection, move, resize, delete
+
+- Fixes: the selection is pruned after every history change (execute/undo/redo); the settings dialog traps focus (Tab cycles inside, Escape closes, focus returns to the menu button).
+- Hit testing: pure hitTest(scene, worldPoint) returns the top-most visible unlocked node (children before parents, world transforms); collectNodesInRect and collectSelectableIds share the same traversal.
+- Selection with the Move tool: click selects the top node, empty click clears, Shift+click toggles, Ctrl/Cmd+A selects all, Escape clears; hover draws a 1px accent outline; the marquee is a translucent accent rect with a 1px border, Shift adds the marquee result to the selection.
+- Move: dragging moves the whole selection with live previews kept outside the document, pressing an unselected node selects it first, movement under 3px counts as a click, Shift locks the dominant axis, exactly one MoveNodesCommand per drag; arrows nudge 1px, Shift+arrows 10px.
+- Resize: 1px accent bounds with 8 screen-space handles (constant 8px), Shift = proportional, Alt = from center, dragging past the opposite edge mirrors the nodes, a multi-selection scales proportionally inside the bounds, resize cursors over the handles, exactly one ResizeNodesCommand per drag; all math stays axis-aligned.
+- Size label: an accent plate with "W × H" in px below the selection, visible whenever the selection is not empty and updated live while resizing.
+- Delete: Delete/Backspace runs one DeleteNodesCommand (subtrees cached with parent and index, restored on undo), the selection is cleared, text fields keep their keys.
+- Tests: 175 passing (hit testing, selection rules, move and resize math, box transforms, commands with undo/redo, controller gestures and hotkeys). Not verified live: look of the handles, the size plate and the resize cursors (no browser connected to the session).
