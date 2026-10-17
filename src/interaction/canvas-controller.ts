@@ -40,6 +40,7 @@ export interface CanvasControllerOptions {
   onToolChange: (tool: ToolId) => void
   onSelectionChange: (ids: readonly NodeId[]) => void
   onMoveSelection: (delta: Vec2) => void
+  onNudgeSelection: (delta: Vec2) => void
   onResizeSelection: (changes: readonly NodeBoxChange[]) => void
   onDeleteSelection: () => void
   onCreateRectangle: (bounds: Rect) => void
@@ -271,7 +272,7 @@ export class CanvasController {
     if (nudge) {
       event.preventDefault()
       const step = event.shiftKey ? NUDGE_LARGE_STEP_PX : NUDGE_STEP_PX
-      this.#options.onMoveSelection({ x: nudge.x * step, y: nudge.y * step })
+      this.#options.onNudgeSelection({ x: nudge.x * step, y: nudge.y * step })
       return
     }
     const tool = TOOL_HOTKEYS.get(event.code)

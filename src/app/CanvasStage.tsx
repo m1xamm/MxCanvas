@@ -7,7 +7,15 @@ import { CanvasController } from '../interaction/canvas-controller'
 import { selectionStore, setSelection } from '../interaction/selection'
 import type { ToolId } from '../interaction/tools'
 import { Canvas2DRenderer } from '../render/canvas2d-renderer'
-import { createRectangle, deleteSelection, history, moveSelection, resizeSelection, scene } from './editor'
+import {
+  createRectangle,
+  deleteSelection,
+  history,
+  moveSelection,
+  nudgeSelection,
+  resizeSelection,
+  scene,
+} from './editor'
 import { observeDevicePixelRatio } from './observe-device-pixel-ratio'
 import { setTool, setZoom } from './store'
 
@@ -51,6 +59,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       onToolChange: setTool,
       onSelectionChange: setSelection,
       onMoveSelection: moveSelection,
+      onNudgeSelection: nudgeSelection,
       onResizeSelection: resizeSelection,
       onDeleteSelection: deleteSelection,
       onCreateRectangle: (bounds) => {

@@ -26,6 +26,12 @@ export function moveSelection(delta: Vec2): void {
   history.execute(new MoveNodesCommand(scene, ids, delta))
 }
 
+export function nudgeSelection(delta: Vec2): void {
+  const ids = selectionStore.get()
+  if (ids.length === 0 || (delta.x === 0 && delta.y === 0)) return
+  history.execute(new MoveNodesCommand(scene, ids, delta, { mergeable: true }))
+}
+
 export function resizeSelection(changes: readonly NodeBoxChange[]): void {
   if (changes.length === 0) return
   history.execute(new ResizeNodesCommand(scene, changes))

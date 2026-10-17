@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { CreateNodeCommand } from './commands/create-node-command'
+import { MoveNodesCommand } from './commands/move-nodes-command'
 import { Document } from './document/document'
 import type { NodeId, RectangleNode } from './document/types'
 import { History } from './history'
@@ -102,5 +103,74 @@ describe('History', () => {
     unsubscribe()
     history.undo()
     expect(listener).toHaveBeenCalledTimes(3)
+  })
+})
+
+describe('History merge window', () => {
+  function sceneWithRectangle(): Document {
+    const document = new Document()
+    document.addNode(createRectangle('a'))
+    return document
+  }
+
+  it('merges nudges run inside the merge window into one command', () => {
+    const document = sceneWithRectangle()
+    let now = 1000
+    const history = new History({ now: () => now })
+    history.execute(new MoveNodesCommand(document, ['a'], { x: 1, y: 0 }, { mergeable: true }))
+    now = 1400
+    history.execute(new MoveNodesCommand(document, ['a'], { x: 1, y: 0 }, { mergeable: true }))
+    now = 1800
+    history.execute(new MoveNodesCommand(document, ['a'], { x: 0, y: 1 }, { mergeable: true }))
+
+    expect(document.getNode('a')?.transform.e).toBe(2)
+    expect(document.getNode('a')?.transform.f).toBe(1)
+
+    history.undo()
+    expect(document.getNode('a')?.transform.e).toBe(0)
+    expect(document.getNode('a')?.transform.f).toBe(0)
+    expect(history.canUndo).toBe(false)
+  })
+
+  it('keeps nudges apart when the merge window has passed', () => {
+    const document = sceneWithRectangle()
+    let now = 1000
+    const history = new History({ now: () => now })
+    history.execute(new MoveNodesCommand(document, ['a'], { x: 1, y: 0 }, { mergeable: true }))
+    now = 1600
+    history.execute(new MoveNodesCommand(document, ['a'], { x: 1, y: 0 }, { mergeable: true }))
+
+    expect(document.getNode('a')?.transform.e).toBe(2)
+    history.undo()
+    expect(document.getNode('a')?.transform.e).toBe(1)
+    expect(history.canUndo).toBe(true)
+  })
+
+  it('keeps drags as separate undo steps', () => {
+    const document = sceneWithRectangle()
+    const history = new History({ now: () => 1000 })
+    history.execute(new MoveNodesCommand(document, ['a'], { x: 1, y: 0 }))
+    history.execute(new MoveNodesCommand(document, ['a'], { x: 1, y: 0 }))
+
+    expect(document.getNode('a')?.transform.e).toBe(2)
+    history.undo()
+    expect(document.getNode('a')?.transform.e).toBe(1)
+    history.undo()
+    expect(document.getNode('a')?.transform.e).toBe(0)
+  })
+
+  it('starts a fresh nudge chain after an undo', () => {
+    const document = sceneWithRectangle()
+    let now = 1000
+    const history = new History({ now: () => now })
+    history.execute(new MoveNodesCommand(document, ['a'], { x: 1, y: 0 }, { mergeable: true }))
+    history.undo()
+    now = 1100
+    history.execute(new MoveNodesCommand(document, ['a'], { x: 2, y: 0 }, { mergeable: true }))
+
+    expect(document.getNode('a')?.transform.e).toBe(2)
+    history.undo()
+    expect(document.getNode('a')?.transform.e).toBe(0)
+    expect(history.canUndo).toBe(false)
   })
 })

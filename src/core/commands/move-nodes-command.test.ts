@@ -119,4 +119,38 @@ describe('MoveNodesCommand', () => {
     const scene = new Document()
     expect(new MoveNodesCommand(scene, [], { x: 1, y: 1 }).label).toBe('move nodes')
   })
+
+  it('absorbs a mergeable move of the same nodes', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle({ id: 'a', x: 10, y: 10 }))
+    const first = new MoveNodesCommand(scene, ['a'], { x: 5, y: 0 }, { mergeable: true })
+    first.execute()
+    const second = new MoveNodesCommand(scene, ['a'], { x: 5, y: 0 }, { mergeable: true })
+
+    expect(first.mergeWith(second)).toBe(true)
+    expect(scene.getNode('a')?.transform.e).toBe(20)
+
+    first.undo()
+    expect(scene.getNode('a')?.transform.e).toBe(10)
+  })
+
+  it('rejects merges that touch other nodes', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle({ id: 'a', x: 0, y: 0 }))
+    scene.addNode(createRectangle({ id: 'b', x: 0, y: 0 }))
+    const first = new MoveNodesCommand(scene, ['a'], { x: 5, y: 0 }, { mergeable: true })
+    const second = new MoveNodesCommand(scene, ['b'], { x: 5, y: 0 }, { mergeable: true })
+
+    expect(first.mergeWith(second)).toBe(false)
+  })
+
+  it('rejects drag moves that are not mergeable', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle({ id: 'a', x: 0, y: 0 }))
+    const drag = new MoveNodesCommand(scene, ['a'], { x: 5, y: 0 })
+    const nudge = new MoveNodesCommand(scene, ['a'], { x: 5, y: 0 }, { mergeable: true })
+
+    expect(drag.mergeWith(nudge)).toBe(false)
+    expect(nudge.mergeWith(drag)).toBe(false)
+  })
 })

@@ -140,6 +140,7 @@ function setup(initialTool: ToolId = 'move', scene: Document = new Document()) {
   const viewport = new Viewport()
   const onToolChange = vi.fn<(tool: ToolId) => void>()
   const onMoveSelection = vi.fn<(delta: Vec2) => void>()
+  const onNudgeSelection = vi.fn<(delta: Vec2) => void>()
   const onResizeSelection = vi.fn<(changes: readonly NodeBoxChange[]) => void>()
   const onDeleteSelection = vi.fn<() => void>()
   const onCreateRectangle = vi.fn<(bounds: Rect) => void>()
@@ -158,6 +159,7 @@ function setup(initialTool: ToolId = 'move', scene: Document = new Document()) {
     onToolChange,
     onSelectionChange,
     onMoveSelection,
+    onNudgeSelection,
     onResizeSelection,
     onDeleteSelection,
     onCreateRectangle,
@@ -174,6 +176,7 @@ function setup(initialTool: ToolId = 'move', scene: Document = new Document()) {
     onToolChange,
     onSelectionChange,
     onMoveSelection,
+    onNudgeSelection,
     onResizeSelection,
     onDeleteSelection,
     onCreateRectangle,
@@ -430,38 +433,38 @@ describe('CanvasController', () => {
   })
 
   it('nudges the selection by one pixel with arrow keys', () => {
-    const { fakeWindow, onMoveSelection, controller } = setup()
+    const { fakeWindow, onNudgeSelection, controller } = setup()
     const nudge = (code: string) => fakeWindow.dispatch('keydown', createKeyEvent({ code }))
     nudge('ArrowLeft')
-    expect(onMoveSelection).toHaveBeenLastCalledWith({ x: -1, y: 0 })
+    expect(onNudgeSelection).toHaveBeenLastCalledWith({ x: -1, y: 0 })
     nudge('ArrowRight')
-    expect(onMoveSelection).toHaveBeenLastCalledWith({ x: 1, y: 0 })
+    expect(onNudgeSelection).toHaveBeenLastCalledWith({ x: 1, y: 0 })
     nudge('ArrowUp')
-    expect(onMoveSelection).toHaveBeenLastCalledWith({ x: 0, y: -1 })
+    expect(onNudgeSelection).toHaveBeenLastCalledWith({ x: 0, y: -1 })
     nudge('ArrowDown')
-    expect(onMoveSelection).toHaveBeenLastCalledWith({ x: 0, y: 1 })
-    expect(onMoveSelection).toHaveBeenCalledTimes(4)
+    expect(onNudgeSelection).toHaveBeenLastCalledWith({ x: 0, y: 1 })
+    expect(onNudgeSelection).toHaveBeenCalledTimes(4)
     controller.dispose()
   })
 
   it('nudges by ten pixels with shift+arrows', () => {
-    const { fakeWindow, onMoveSelection, controller } = setup()
+    const { fakeWindow, onNudgeSelection, controller } = setup()
     fakeWindow.dispatch('keydown', createKeyEvent({ code: 'ArrowRight', shiftKey: true }))
-    expect(onMoveSelection).toHaveBeenLastCalledWith({ x: 10, y: 0 })
+    expect(onNudgeSelection).toHaveBeenLastCalledWith({ x: 10, y: 0 })
     fakeWindow.dispatch('keydown', createKeyEvent({ code: 'ArrowDown', shiftKey: true }))
-    expect(onMoveSelection).toHaveBeenLastCalledWith({ x: 0, y: 10 })
+    expect(onNudgeSelection).toHaveBeenLastCalledWith({ x: 0, y: 10 })
     controller.dispose()
   })
 
   it('ignores arrow keys inside editable targets', () => {
-    const { fakeWindow, onMoveSelection, controller } = setup()
+    const { fakeWindow, onNudgeSelection, controller } = setup()
     const input = new FakeHTMLElement()
     input.tagName = 'INPUT'
     fakeWindow.dispatch(
       'keydown',
       createKeyEvent({ code: 'ArrowRight', target: input as unknown as EventTarget }),
     )
-    expect(onMoveSelection).not.toHaveBeenCalled()
+    expect(onNudgeSelection).not.toHaveBeenCalled()
     controller.dispose()
   })
 
