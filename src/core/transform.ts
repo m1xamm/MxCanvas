@@ -1,6 +1,6 @@
 import type { SceneNodeUnion, SceneReader } from './document/types'
 import { applyToPoint, invert, multiply, type Mat2D } from './math/matrix'
-import { transformRect, type Rect } from './math/rect'
+import { boundsOfRects, transformRect, type Rect } from './math/rect'
 
 export interface NodeBox {
   transform: Mat2D
@@ -21,6 +21,15 @@ export function nodeWorldRect(scene: SceneReader, node: SceneNodeUnion): Rect {
   })
 }
 
+export function sceneBounds(scene: SceneReader): Rect | null {
+  const rects: Rect[] = []
+  for (const id of scene.getRootChildren()) {
+    const node = scene.getNode(id)
+    if (node) collectBounds(scene, node, rects)
+  }
+  return boundsOfRects(rects)
+}
+
 export function boxWorldTransform(scene: SceneReader, node: SceneNodeUnion, box: NodeBox): Mat2D {
   return node.parentId === null
     ? box.transform
@@ -36,6 +45,15 @@ export function worldRectToBox(scene: SceneReader, node: SceneNodeUnion, rect: R
     width: unscaledSize(rect.width, Math.hypot(world.a, world.b)),
     height: unscaledSize(rect.height, Math.hypot(world.c, world.d)),
   }
+}
+
+function collectBounds(scene: SceneReader, node: SceneNodeUnion, rects: Rect[]): void {
+  if (!node.visible) return
+  for (const id of node.children) {
+    const child = scene.getNode(id)
+    if (child) collectBounds(scene, child, rects)
+  }
+  rects.push(nodeWorldRect(scene, node))
 }
 
 function unscaledSize(size: number, scale: number): number {

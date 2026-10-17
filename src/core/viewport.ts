@@ -60,6 +60,15 @@ export class Viewport {
     this.#notify()
   }
 
+  setView(pan: Vec2, zoom: number): void {
+    const nextZoom = clampZoom(zoom)
+    if (this.#panX === pan.x && this.#panY === pan.y && this.#zoom === nextZoom) return
+    this.#panX = pan.x
+    this.#panY = pan.y
+    this.#zoom = nextZoom
+    this.#notify()
+  }
+
   subscribe(listener: () => void): () => void {
     this.#listeners.add(listener)
     return () => {

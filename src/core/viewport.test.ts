@@ -73,4 +73,17 @@ describe('Viewport', () => {
     viewport.panBy({ x: 5, y: 5 })
     expect(listener).toHaveBeenCalledTimes(2)
   })
+
+  it('sets pan and zoom directly and clamps the zoom', () => {
+    const viewport = new Viewport()
+    const listener = vi.fn()
+    viewport.subscribe(listener)
+    viewport.setView({ x: 40, y: 20 }, 3)
+    expect(viewport.pan).toEqual({ x: 40, y: 20 })
+    expect(viewport.zoom).toBe(3)
+    viewport.setView({ x: 40, y: 20 }, 3)
+    expect(listener).toHaveBeenCalledTimes(1)
+    viewport.setView({ x: 0, y: 0 }, 1000)
+    expect(viewport.zoom).toBe(MAX_ZOOM)
+  })
 })
