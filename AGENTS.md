@@ -31,12 +31,13 @@ Rules:
 
 ## Git
 - Remote: https://github.com/m1xamm/MxCanvas.git (origin). Branch: main.
-- Commit after each finished logical unit of work, and always at the end of a stage, only when typecheck, test and build pass. Never push unless the user asks.
+- Make small commits: one per finished logical unit (3-8 per stage), never one giant commit per stage. Commit only when typecheck, test and build pass.
+- Push to origin main right after every commit. If push fails, say why in the report.
 - Commit message: English, imperative, lowercase, max ~50 characters, NO period at the end, one line, no body. Describe the concrete change.
   Good: `add canvas pan and zoom`, `fix zoom anchor at cursor`, `add rectangle tool`
-  Bad: `Implemented comprehensive canvas functionality.`, `✨ feat: enhance rendering pipeline`, `Update files`, `Refactor and improve code`
+  Bad: `Implemented comprehensive canvas functionality.`, `✨ feat: enhance rendering pipeline`, `Update files`
 - No emojis, no "feat:/fix:" prefixes, no vague words (improve, enhance, comprehensive, robust, various, misc), no "Co-Authored-By" or "Generated with" lines, no mention of AI.
-- Never commit node_modules, dist or secrets. Keep .gitignore correct.
+- Never commit node_modules, dist or secrets.
 
 ## Performance rules
 - Render on demand (dirty flag + requestAnimationFrame), never a constant loop.
@@ -45,9 +46,18 @@ Rules:
 - Target: 60 fps with 5,000 simple nodes.
 
 ## UI / design
-Match Figma UI3 layout: floating toolbar at bottom center, left panel (Layers / Assets, pages), right panel (Design tab with sections like Position, Layout, Appearance, Fill, Stroke, Effects, Export).
-Visual style: Material 3 Expressive, dark gray theme by default, rounded surfaces, tonal elevation, short smooth motion.
-All colors, spacing, radii, typography and motion come from CSS variables in src/ui/theme. Never hardcode colors in components. Icons are our own inline SVG components (no icon library without asking).
+Figma UI3 layout, Material 3 Expressive look, dark gray theme.
+Shape tokens in theme.css: --radius-outer: 22px, --radius-seam: 4px, --gap-cluster: 4px, --gap-screen: 8px.
+Cluster pattern: related blocks sit in a cluster of separate tonal blocks 4px apart. The cluster's outer corners are 22px, corners where two blocks touch are 4px. One reusable `Cluster` (CSS utility + Preact component, horizontal and vertical) sets radii by position (first/middle/last/only). Use it for: toolbar buttons, left panel blocks, right panel sections (Position, Layout, Appearance, Fill, Stroke, Effects, Export), property rows, segmented controls.
+Panels float 8px from the window edges. No 1px borders, no divider lines: separation is only the 4px gap and tone difference. Elevation is tonal; shadows only for popups and menus.
+Active controls: primary container tone and pill shape (radius transition). Motion 150-250ms, emphasized easing.
+All colors, spacing, radii, typography and motion come from CSS variables in src/ui/theme. Never hardcode them. Icons are our own inline SVG components.
+
+## Localization
+- UI languages: Russian (default) and English. All UI strings live in src/i18n/ru.ts and en.ts as typed dictionaries, accessed via `t(key)`. No hardcoded strings in components.
+- Russian must be natural and use Figma's Russian terms (Слои, Ресурсы, Фрейм, Прямоугольник, Заливка, Обводка, Эффекты, Экспорт). Plurals via Intl.PluralRules.
+- Language comes from navigator.language on first run, can be switched in the UI, persisted in localStorage.
+- Hotkeys use KeyboardEvent.code (physical keys) so they work on the Russian layout.
 
 ## Figma behavior is the spec
 When unsure how something should behave, copy Figma. Hotkeys: V move, R rectangle, O ellipse, L line, Shift+L arrow, T text, F frame, P pen, H hand, Space+drag pan, scroll = pan, Ctrl+scroll / pinch = zoom at cursor, Shift+0 zoom 100%, Shift+1 zoom to fit, Shift+2 zoom to selection, Ctrl+Z undo, Ctrl+Shift+Z redo, Ctrl+D duplicate, Ctrl+G group, Ctrl+Shift+G ungroup, Ctrl+Alt+G frame selection, Shift+A auto layout, Ctrl+Alt+K create component, Ctrl+] / Ctrl+[ bring forward / send backward.
@@ -61,11 +71,10 @@ When unsure how something should behave, copy Figma. Hotkeys: V move, R rectangl
 - If a decision is ambiguous, ask the user (max 3 questions at once).
 
 ## Report format (end of EVERY stage, in Russian)
-1. What was done (bullets)
-2. Files created/changed
-3. How to run and manually check it (steps)
-4. Results of typecheck / test / build
-5. What does not work, compromises, deviations from the stage
-6. Current src/ tree + key types/interfaces (signatures only, not full code)
-7. Commits made in this stage (list of messages)
-8. Risks and suggestions for the next stage
+The report is read by another AI to plan the next stage. Max 30 lines. No fluff, no repeating the task, no restating unchanged code.
+1. Done: max 8 one-line bullets
+2. Checks: typecheck / test / build, one line
+3. Broken or deviating: honest list, or "none"
+4. Changed API: signatures only of what was added or changed in this stage
+5. Commits: list of messages
+6. Manual check steps: max 5 lines

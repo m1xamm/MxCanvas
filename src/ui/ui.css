@@ -48,7 +48,7 @@
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-medium);
   color: var(--color-on-surface-variant);
-  border-radius: var(--radius-xs);
+  border-radius: var(--radius-seam);
   cursor: pointer;
   user-select: none;
   transition: color var(--motion-fast) var(--motion-easing);
@@ -90,7 +90,7 @@
   gap: var(--space-1);
   padding: var(--space-1);
   background: var(--color-surface-elevated);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-outer);
   box-shadow: var(--shadow-overlay);
   z-index: 10;
 }
@@ -101,7 +101,7 @@
   width: var(--toolbar-button-size);
   height: var(--toolbar-button-size);
   border: none;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-seam);
   background: transparent;
   color: var(--color-on-surface);
   cursor: pointer;
