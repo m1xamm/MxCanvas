@@ -2,6 +2,7 @@ import { render } from 'preact'
 import { App } from './App'
 import '../ui/theme/theme.css'
 import '../ui/theme/base.css'
+import '../ui/cluster.css'
 import '../ui/ui.css'
 
 const rootElement = document.getElementById('app')

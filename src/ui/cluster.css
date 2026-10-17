@@ -1,0 +1,45 @@
+.cluster {
+  display: flex;
+  gap: var(--gap-cluster);
+}
+
+.cluster--horizontal {
+  flex-direction: row;
+}
+
+.cluster--vertical {
+  flex-direction: column;
+}
+
+.cluster > * {
+  border-radius: var(--cluster-radius, var(--radius-outer));
+  transition: border-radius var(--motion-medium) var(--motion-easing);
+}
+
+.cluster--horizontal > :where(:first-child:not(:only-child)) {
+  --cluster-radius: var(--radius-outer) var(--radius-seam) var(--radius-seam) var(--radius-outer);
+}
+
+.cluster--horizontal > :where(:last-child:not(:only-child)) {
+  --cluster-radius: var(--radius-seam) var(--radius-outer) var(--radius-outer) var(--radius-seam);
+}
+
+.cluster--horizontal > :where(:not(:first-child):not(:last-child)) {
+  --cluster-radius: var(--radius-seam);
+}
+
+.cluster--vertical > :where(:first-child:not(:only-child)) {
+  --cluster-radius: var(--radius-outer) var(--radius-outer) var(--radius-seam) var(--radius-seam);
+}
+
+.cluster--vertical > :where(:last-child:not(:only-child)) {
+  --cluster-radius: var(--radius-seam) var(--radius-seam) var(--radius-outer) var(--radius-outer);
+}
+
+.cluster--vertical > :where(:not(:first-child):not(:last-child)) {
+  --cluster-radius: var(--radius-seam);
+}
+
+.cluster > :where(.is-active) {
+  --cluster-radius: var(--radius-pill);
+}
