@@ -3,10 +3,15 @@ import { Document } from '../core/document/document'
 import type { RectangleNode } from '../core/document/types'
 import type { Rect } from '../core/math/rect'
 import { History } from '../core/history'
+import { pruneSelection } from '../interaction/selection'
 import { t } from '../i18n/i18n'
 
 export const scene = new Document()
 export const history = new History()
+
+history.subscribe(() => {
+  pruneSelection((id) => scene.getNode(id) !== undefined)
+})
 
 let rectangleCount = 0
 
