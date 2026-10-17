@@ -1,13 +1,17 @@
+import type { NodeId, SceneReader } from '../core/document/types'
 import type { Vec2 } from '../core/math/matrix'
 import type { Rect } from '../core/math/rect'
 import type { Viewport } from '../core/viewport'
+import { collectSelectableIds } from './hit-testing'
 import { rectangleFromDrag, type RectangleDragModifiers } from './rectangle-draft'
+import { SelectionTool, type SelectionPointerInput } from './selection-tool'
 import { TOOL_HOTKEYS, type ToolId } from './tools'
 import { normalizeWheelDelta, wheelPanDelta, wheelZoomFactor } from './wheel'
 
 const SPACE_KEY_CODE = 'Space'
 const ZOOM_RESET_KEY_CODE = 'Digit0'
 const ESCAPE_KEY_CODE = 'Escape'
+const SELECT_ALL_KEY_CODE = 'KeyA'
 const UNDO_KEY_CODE = 'KeyZ'
 const REDO_ALTERNATE_KEY_CODE = 'KeyY'
 const ZOOM_RESET_TARGET = 1
@@ -18,9 +22,13 @@ const EDITABLE_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT'])
 
 export interface CanvasControllerOptions {
   initialTool: ToolId
+  scene: SceneReader
+  getSelection: () => readonly NodeId[]
   onToolChange: (tool: ToolId) => void
+  onSelectionChange: (ids: readonly NodeId[]) => void
   onCreateRectangle: (bounds: Rect) => void
   onDraftChange: () => void
+  onOverlayChange: () => void
   onUndo: () => void
   onRedo: () => void
   isInputBlocked?: () => boolean
@@ -30,11 +38,13 @@ export class CanvasController {
   #canvas: HTMLCanvasElement
   #viewport: Viewport
   #options: CanvasControllerOptions
+  #selectionTool: SelectionTool
   #tool: ToolId
   #spaceDown = false
   #panning = false
   #panPointerId: number | null = null
   #lastScreen: Vec2 = { x: 0, y: 0 }
+  #pointer: Vec2 = { x: 0, y: 0 }
   #draft: Rect | null = null
   #draftPointerId: number | null = null
   #draftStart: Vec2 = { x: 0, y: 0 }
@@ -44,11 +54,19 @@ export class CanvasController {
     this.#viewport = viewport
     this.#options = options
     this.#tool = options.initialTool
+    this.#selectionTool = new SelectionTool({
+      scene: options.scene,
+      viewport,
+      getSelection: options.getSelection,
+      onSelectionChange: options.onSelectionChange,
+      onOverlayChange: options.onOverlayChange,
+    })
     canvas.addEventListener('wheel', this.#onWheel, { passive: false })
     canvas.addEventListener('pointerdown', this.#onPointerDown)
     canvas.addEventListener('pointermove', this.#onPointerMove)
     canvas.addEventListener('pointerup', this.#onPointerUp)
     canvas.addEventListener('pointercancel', this.#onPointerUp)
+    canvas.addEventListener('pointerleave', this.#onPointerLeave)
     canvas.addEventListener('mousedown', this.#onMouseDown)
     window.addEventListener('keydown', this.#onKeyDown)
     window.addEventListener('keyup', this.#onKeyUp)
@@ -60,10 +78,20 @@ export class CanvasController {
     return this.#draft
   }
 
+  get hoveredId(): NodeId | null {
+    return this.#selectionTool.hoveredId
+  }
+
+  get marquee(): Rect | null {
+    return this.#selectionTool.marquee
+  }
+
   setTool(tool: ToolId): void {
     if (this.#tool === tool) return
     this.#tool = tool
     this.#cancelDraft()
+    this.#selectionTool.cancel()
+    if (tool !== 'move') this.#selectionTool.clearHover()
     this.#updateCursor()
   }
 
@@ -74,6 +102,7 @@ export class CanvasController {
     canvas.removeEventListener('pointermove', this.#onPointerMove)
     canvas.removeEventListener('pointerup', this.#onPointerUp)
     canvas.removeEventListener('pointercancel', this.#onPointerUp)
+    canvas.removeEventListener('pointerleave', this.#onPointerLeave)
     canvas.removeEventListener('mousedown', this.#onMouseDown)
     window.removeEventListener('keydown', this.#onKeyDown)
     window.removeEventListener('keyup', this.#onKeyUp)
@@ -93,6 +122,7 @@ export class CanvasController {
 
   #onPointerDown = (event: PointerEvent): void => {
     if (this.#panning) return
+    this.#pointer = this.#toCanvasPoint(event)
     const panTriggered =
       event.button === MIDDLE_MOUSE_BUTTON ||
       (event.button === PRIMARY_MOUSE_BUTTON && (this.#tool === 'hand' || this.#spaceDown))
@@ -100,56 +130,81 @@ export class CanvasController {
       event.preventDefault()
       this.#panning = true
       this.#panPointerId = event.pointerId
-      this.#lastScreen = this.#toCanvasPoint(event)
+      this.#lastScreen = this.#pointer
       this.#canvas.setPointerCapture(event.pointerId)
       this.#updateCursor()
       return
     }
-    if (event.button === PRIMARY_MOUSE_BUTTON && this.#tool === 'rectangle') {
+    if (event.button !== PRIMARY_MOUSE_BUTTON) return
+    if (this.#tool === 'rectangle') {
       event.preventDefault()
       this.#draftPointerId = event.pointerId
-      this.#draftStart = this.#viewport.screenToWorld(this.#toCanvasPoint(event))
+      this.#draftStart = this.#viewport.screenToWorld(this.#pointer)
       this.#draft = rectangleFromDrag(this.#draftStart, this.#draftStart, dragModifiers(event))
       this.#canvas.setPointerCapture(event.pointerId)
       this.#options.onDraftChange()
+      return
+    }
+    if (this.#tool === 'move') {
+      event.preventDefault()
+      this.#canvas.setPointerCapture(event.pointerId)
+      this.#selectionTool.pointerDown(selectionPointer(event, this.#pointer))
+      this.#updateCursor()
     }
   }
 
   #onPointerMove = (event: PointerEvent): void => {
+    this.#pointer = this.#toCanvasPoint(event)
     if (this.#panning && event.pointerId === this.#panPointerId) {
-      const point = this.#toCanvasPoint(event)
-      this.#viewport.panBy({ x: point.x - this.#lastScreen.x, y: point.y - this.#lastScreen.y })
-      this.#lastScreen = point
+      this.#viewport.panBy({
+        x: this.#pointer.x - this.#lastScreen.x,
+        y: this.#pointer.y - this.#lastScreen.y,
+      })
+      this.#lastScreen = this.#pointer
       return
     }
     if (this.#draftPointerId !== null && event.pointerId === this.#draftPointerId) {
-      const world = this.#viewport.screenToWorld(this.#toCanvasPoint(event))
+      const world = this.#viewport.screenToWorld(this.#pointer)
       this.#draft = rectangleFromDrag(this.#draftStart, world, dragModifiers(event))
       this.#options.onDraftChange()
+      return
     }
+    if (this.#tool !== 'move') return
+    this.#selectionTool.pointerMove(selectionPointer(event, this.#pointer))
+    this.#updateCursor()
   }
 
   #onPointerUp = (event: PointerEvent): void => {
     if (this.#panning && event.pointerId === this.#panPointerId) {
       this.#panning = false
       this.#panPointerId = null
-      if (this.#canvas.hasPointerCapture(event.pointerId)) {
-        this.#canvas.releasePointerCapture(event.pointerId)
-      }
+      this.#releasePointerCapture(event.pointerId)
       this.#updateCursor()
       return
     }
-    if (this.#draftPointerId === null || event.pointerId !== this.#draftPointerId) return
-    const draft = this.#draft
-    const cancelled = event.type === 'pointercancel'
-    this.#draftPointerId = null
-    this.#draft = null
-    if (this.#canvas.hasPointerCapture(event.pointerId)) {
-      this.#canvas.releasePointerCapture(event.pointerId)
+    if (this.#draftPointerId !== null && event.pointerId === this.#draftPointerId) {
+      const draft = this.#draft
+      const cancelled = event.type === 'pointercancel'
+      this.#draftPointerId = null
+      this.#draft = null
+      this.#releasePointerCapture(event.pointerId)
+      if (draft && !cancelled) this.#options.onCreateRectangle(draft)
+      this.#options.onDraftChange()
+      this.#updateCursor()
+      return
     }
-    if (draft && !cancelled) this.#options.onCreateRectangle(draft)
-    this.#options.onDraftChange()
+    this.#pointer = this.#toCanvasPoint(event)
+    const handled =
+      event.type === 'pointercancel'
+        ? this.#selectionTool.cancel()
+        : this.#selectionTool.pointerUp(selectionPointer(event, this.#pointer))
+    if (!handled) return
+    this.#releasePointerCapture(event.pointerId)
     this.#updateCursor()
+  }
+
+  #onPointerLeave = (): void => {
+    this.#selectionTool.clearHover()
   }
 
   #onMouseDown = (event: MouseEvent): void => {
@@ -160,10 +215,8 @@ export class CanvasController {
     if (isEditableTarget(event.target)) return
     if (this.#options.isInputBlocked?.()) return
     if (event.code === ESCAPE_KEY_CODE) {
-      if (this.#draftPointerId !== null) {
-        event.preventDefault()
-        this.#cancelDraft()
-      }
+      event.preventDefault()
+      this.#handleEscape()
       return
     }
     if (event.code === SPACE_KEY_CODE) {
@@ -174,7 +227,7 @@ export class CanvasController {
       return
     }
     if (event.ctrlKey || event.metaKey) {
-      if (!event.altKey) this.#handleHistoryShortcut(event)
+      if (!event.altKey) this.#handleModifierShortcut(event)
       return
     }
     if (event.altKey) return
@@ -199,7 +252,27 @@ export class CanvasController {
   #onBlur = (): void => {
     this.#spaceDown = false
     this.#cancelDraft()
+    this.#selectionTool.cancel()
     this.#updateCursor()
+  }
+
+  #handleEscape(): void {
+    if (this.#draftPointerId !== null) {
+      this.#cancelDraft()
+      return
+    }
+    if (this.#selectionTool.cancel()) return
+    this.#options.onSelectionChange([])
+  }
+
+  #handleModifierShortcut(event: KeyboardEvent): void {
+    if (event.code === SELECT_ALL_KEY_CODE) {
+      if (event.shiftKey) return
+      event.preventDefault()
+      this.#options.onSelectionChange(collectSelectableIds(this.#options.scene))
+      return
+    }
+    this.#handleHistoryShortcut(event)
   }
 
   #handleHistoryShortcut(event: KeyboardEvent): void {
@@ -228,10 +301,14 @@ export class CanvasController {
     const pointerId = this.#draftPointerId
     this.#draftPointerId = null
     this.#draft = null
+    this.#releasePointerCapture(pointerId)
+    this.#options.onDraftChange()
+  }
+
+  #releasePointerCapture(pointerId: number): void {
     if (this.#canvas.hasPointerCapture(pointerId)) {
       this.#canvas.releasePointerCapture(pointerId)
     }
-    this.#options.onDraftChange()
   }
 
   #resetZoom(): void {
@@ -244,7 +321,12 @@ export class CanvasController {
       this.#canvas.style.cursor = this.#panning ? 'grabbing' : 'grab'
       return
     }
-    this.#canvas.style.cursor = this.#tool === 'rectangle' ? 'crosshair' : 'default'
+    if (this.#tool === 'rectangle') {
+      this.#canvas.style.cursor = 'crosshair'
+      return
+    }
+    this.#canvas.style.cursor =
+      this.#tool === 'move' ? this.#selectionTool.cursorAt() : 'default'
   }
 
   #viewportCenter(): Vec2 {
@@ -255,6 +337,13 @@ export class CanvasController {
     const rect = this.#canvas.getBoundingClientRect()
     return { x: event.clientX - rect.left, y: event.clientY - rect.top }
   }
+}
+
+function selectionPointer(
+  event: { pointerId: number; shiftKey: boolean; altKey: boolean },
+  screen: Vec2,
+): SelectionPointerInput {
+  return { pointerId: event.pointerId, screen, shiftKey: event.shiftKey, altKey: event.altKey }
 }
 
 function dragModifiers(event: { shiftKey: boolean; altKey: boolean }): RectangleDragModifiers {

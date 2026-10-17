@@ -1,7 +1,7 @@
 import type { Vec2 } from '../core/math/matrix'
 import type { Rect } from '../core/math/rect'
+import { CLICK_MOVEMENT_THRESHOLD_PX } from './gesture'
 
-export const CLICK_MOVEMENT_THRESHOLD_PX = 3
 export const CLICK_RECTANGLE_SIZE = 100
 
 export interface RectangleDragModifiers {

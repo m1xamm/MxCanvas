@@ -1,7 +1,7 @@
 import { DEFAULT_RECTANGLE_FILL } from '../core/document/create-node'
 import type { NodeId, SceneNodeUnion, SceneReader, SolidPaint } from '../core/document/types'
 import { multiply, scaling, type Mat2D } from '../core/math/matrix'
-import type { Rect } from '../core/math/rect'
+import { transformRect, type Rect } from '../core/math/rect'
 import type { Viewport } from '../core/viewport'
 import { collectVisibleNodes } from './culling'
 import type { Renderer } from './renderer'
@@ -14,6 +14,8 @@ const DRAFT_FILL_ALPHA = 0.6
 export interface Canvas2DRendererOptions {
   scene: SceneReader
   getSelection: () => readonly NodeId[]
+  getHoveredId?: () => NodeId | null
+  getMarquee?: () => Rect | null
   getDraft?: () => Rect | null
 }
 
@@ -23,6 +25,8 @@ export class Canvas2DRenderer implements Renderer {
   #viewport: Viewport
   #scene: SceneReader
   #getSelection: () => readonly NodeId[]
+  #getHoveredId: () => NodeId | null
+  #getMarquee: () => Rect | null
   #getDraft: () => Rect | null
   #colors: ThemeColors
   #devicePixelRatio = 1
@@ -40,6 +44,8 @@ export class Canvas2DRenderer implements Renderer {
     this.#viewport = viewport
     this.#scene = options.scene
     this.#getSelection = options.getSelection
+    this.#getHoveredId = options.getHoveredId ?? (() => null)
+    this.#getMarquee = options.getMarquee ?? (() => null)
     this.#getDraft = options.getDraft ?? (() => null)
     this.#colors = readThemeColors()
   }
@@ -79,7 +85,9 @@ export class Canvas2DRenderer implements Renderer {
     for (const node of collectVisibleNodes(this.#scene, this.#viewportWorldBounds(), this.#visibleNodes)) {
       this.#drawNode(node, deviceViewport)
     }
+    this.#drawHoverOutline(deviceViewport)
     this.#drawSelectionOutline(deviceViewport)
+    this.#drawMarquee()
     this.#drawDraft(deviceViewport)
   }
 
@@ -94,6 +102,19 @@ export class Canvas2DRenderer implements Renderer {
     context.globalAlpha = 1
   }
 
+  #drawHoverOutline(deviceViewport: Mat2D): void {
+    const id = this.#getHoveredId()
+    if (!id || this.#getSelection().includes(id)) return
+    const node = this.#scene.getNode(id)
+    if (!node || !node.visible) return
+    const context = this.#context
+    context.strokeStyle = this.#colors.primary
+    context.lineWidth = OUTLINE_SCREEN_PX / this.#viewport.zoom
+    this.#applyTransform(multiply(deviceViewport, this.#scene.getWorldTransform(id)))
+    this.#traceNodePath(node)
+    context.stroke()
+  }
+
   #drawSelectionOutline(deviceViewport: Mat2D): void {
     const context = this.#context
     context.strokeStyle = this.#colors.primary
@@ -105,6 +126,24 @@ export class Canvas2DRenderer implements Renderer {
       this.#traceNodePath(node)
       context.stroke()
     }
+  }
+
+  #drawMarquee(): void {
+    const marquee = this.#getMarquee()
+    if (!marquee) return
+    const context = this.#context
+    const bounds = transformRect(this.#viewport.matrix(), marquee)
+    this.#applyScreenTransform()
+    context.fillStyle = this.#colors.marqueeFill
+    context.fillRect(bounds.x, bounds.y, bounds.width, bounds.height)
+    context.strokeStyle = this.#colors.primary
+    context.lineWidth = OUTLINE_SCREEN_PX
+    context.strokeRect(
+      Math.round(bounds.x) + 0.5,
+      Math.round(bounds.y) + 0.5,
+      Math.max(Math.round(bounds.width) - 1, 0),
+      Math.max(Math.round(bounds.height) - 1, 0),
+    )
   }
 
   #drawDraft(deviceViewport: Mat2D): void {
@@ -144,6 +183,10 @@ export class Canvas2DRenderer implements Renderer {
 
   #applyTransform(matrix: Mat2D): void {
     this.#context.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f)
+  }
+
+  #applyScreenTransform(): void {
+    this.#context.setTransform(this.#devicePixelRatio, 0, 0, this.#devicePixelRatio, 0, 0)
   }
 }
 

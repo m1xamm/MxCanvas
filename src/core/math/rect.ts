@@ -11,6 +11,15 @@ export function rectsIntersect(a: Rect, b: Rect): boolean {
   return a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
 }
 
+export function normalizeRect(rect: Rect): Rect {
+  return {
+    x: rect.width < 0 ? rect.x + rect.width : rect.x,
+    y: rect.height < 0 ? rect.y + rect.height : rect.y,
+    width: Math.abs(rect.width),
+    height: Math.abs(rect.height),
+  }
+}
+
 export function transformRect(matrix: Mat2D, rect: Rect): Rect {
   const x1 = matrix.a * rect.x + matrix.c * rect.y + matrix.e
   const y1 = matrix.b * rect.x + matrix.d * rect.y + matrix.f

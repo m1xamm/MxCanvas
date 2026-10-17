@@ -1,5 +1,7 @@
 import type { NodeId, SceneNodeUnion, SceneReader } from '../core/document/types'
 import { applyToPoint, invert, type Vec2 } from '../core/math/matrix'
+import { rectsIntersect, type Rect } from '../core/math/rect'
+import { nodeWorldRect } from '../core/transform'
 
 export function hitTest(scene: SceneReader, worldPoint: Vec2): SceneNodeUnion | null {
   const rootIds = scene.getRootChildren()
@@ -30,4 +32,32 @@ function containsWorldPoint(scene: SceneReader, node: SceneNodeUnion, worldPoint
   if (!inverse) return false
   const local = applyToPoint(inverse, worldPoint)
   return local.x >= 0 && local.y >= 0 && local.x <= node.width && local.y <= node.height
+}
+
+export function collectNodesInRect(scene: SceneReader, bounds: Rect): NodeId[] {
+  const ids: NodeId[] = []
+  for (const rootId of scene.getRootChildren()) {
+    collectSelectable(scene, rootId, (node) => rectsIntersect(nodeWorldRect(scene, node), bounds), ids)
+  }
+  return ids
+}
+
+export function collectSelectableIds(scene: SceneReader): NodeId[] {
+  const ids: NodeId[] = []
+  for (const rootId of scene.getRootChildren()) {
+    collectSelectable(scene, rootId, () => true, ids)
+  }
+  return ids
+}
+
+function collectSelectable(
+  scene: SceneReader,
+  id: NodeId,
+  include: (node: SceneNodeUnion) => boolean,
+  out: NodeId[],
+): void {
+  const node = scene.getNode(id)
+  if (!node || !node.visible) return
+  if (!node.locked && include(node)) out.push(id)
+  for (const childId of node.children) collectSelectable(scene, childId, include, out)
 }

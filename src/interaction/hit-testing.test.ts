@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { Document } from '../core/document/document'
 import type { NodeId, RectangleNode } from '../core/document/types'
 import { multiply, translation, type Mat2D } from '../core/math/matrix'
-import { hitTest } from './hit-testing'
+import { collectNodesInRect, collectSelectableIds, hitTest } from './hit-testing'
 
 interface RectangleOptions {
   id: string
@@ -103,5 +103,47 @@ describe('hitTest', () => {
     expect(hitTest(scene, { x: 110, y: 60 })?.id).toBe('a')
     expect(hitTest(scene, { x: 110.1, y: 60 })).toBeNull()
     expect(hitTest(scene, { x: 111, y: 60 })).toBeNull()
+  })
+})
+
+describe('collectNodesInRect', () => {
+  it('collects nodes intersecting the rect in tree order', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle({ id: 'a', x: 0, y: 0 }))
+    scene.addNode(createRectangle({ id: 'parent', x: 150, y: 0, width: 200, height: 200 }))
+    scene.addNode(createRectangle({ id: 'child', parentId: 'parent', x: 10, y: 10 }))
+    scene.addNode(createRectangle({ id: 'far', x: 900, y: 900 }))
+    expect(collectNodesInRect(scene, { x: 0, y: 0, width: 400, height: 400 })).toEqual([
+      'a',
+      'parent',
+      'child',
+    ])
+  })
+
+  it('skips invisible and locked nodes', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle({ id: 'hidden', visible: false }))
+    scene.addNode(createRectangle({ id: 'locked', locked: true }))
+    scene.addNode(createRectangle({ id: 'hiddenChild', parentId: 'hidden' }))
+    expect(collectNodesInRect(scene, { x: -100, y: -100, width: 500, height: 500 })).toEqual([])
+  })
+
+  it('selects nodes partially covered by the rect and ignores touching ones', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle({ id: 'partial', x: 90, y: 0 }))
+    scene.addNode(createRectangle({ id: 'touching', x: 200, y: 0 }))
+    expect(collectNodesInRect(scene, { x: 0, y: 0, width: 200, height: 100 })).toEqual(['partial'])
+  })
+})
+
+describe('collectSelectableIds', () => {
+  it('collects every visible unlocked node', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle({ id: 'a', x: 0, y: 0 }))
+    scene.addNode(createRectangle({ id: 'parent', x: 200, y: 0 }))
+    scene.addNode(createRectangle({ id: 'child', parentId: 'parent' }))
+    scene.addNode(createRectangle({ id: 'hidden', visible: false }))
+    scene.addNode(createRectangle({ id: 'locked', locked: true }))
+    expect(collectSelectableIds(scene)).toEqual(['a', 'parent', 'child'])
   })
 })

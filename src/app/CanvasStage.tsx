@@ -34,11 +34,16 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
     const renderer = new Canvas2DRenderer(canvas, viewport, {
       scene,
       getSelection: () => selectionStore.get(),
+      getHoveredId: () => controller?.hoveredId ?? null,
+      getMarquee: () => controller?.marquee ?? null,
       getDraft: () => controller?.draft ?? null,
     })
     const createdController = new CanvasController(canvas, viewport, {
       initialTool: tool,
+      scene,
+      getSelection: () => selectionStore.get(),
       onToolChange: setTool,
+      onSelectionChange: setSelection,
       onCreateRectangle: (bounds) => {
         const node = createRectangle(bounds)
         history.execute(new CreateNodeCommand(scene, node))
@@ -46,6 +51,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
         setTool('move')
       },
       onDraftChange: () => renderer.requestRender(),
+      onOverlayChange: () => renderer.requestRender(),
       onUndo: () => history.undo(),
       onRedo: () => history.redo(),
       isInputBlocked: () => blockedRef.current,

@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { pruneSelection, selectionStore, setSelection } from './selection'
+import {
+  pruneSelection,
+  selectionOnPress,
+  selectionStore,
+  setSelection,
+  toggleSelection,
+  unionSelection,
+} from './selection'
 
 afterEach(() => {
   setSelection([])
@@ -23,5 +30,22 @@ describe('selection store', () => {
     const before = selectionStore.get()
     pruneSelection(() => true)
     expect(selectionStore.get()).toBe(before)
+  })
+})
+
+describe('selection rules', () => {
+  it('selects a single node on press and keeps an existing selection', () => {
+    expect(selectionOnPress([], 'a')).toEqual(['a'])
+    expect(selectionOnPress(['a', 'b'], 'a')).toEqual(['a', 'b'])
+    expect(selectionOnPress(['a'], 'b')).toEqual(['b'])
+  })
+
+  it('toggles a node in and out', () => {
+    expect(toggleSelection([], 'a')).toEqual(['a'])
+    expect(toggleSelection(['a', 'b'], 'a')).toEqual(['b'])
+  })
+
+  it('unions ids without duplicates', () => {
+    expect(unionSelection(['a'], ['b', 'a', 'c'])).toEqual(['a', 'b', 'c'])
   })
 })

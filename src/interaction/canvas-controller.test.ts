@@ -1,4 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { Document } from '../core/document/document'
+import type { NodeId, RectangleNode } from '../core/document/types'
+import { translation } from '../core/math/matrix'
 import type { Rect } from '../core/math/rect'
 import { Viewport } from '../core/viewport'
 import { CanvasController } from './canvas-controller'
@@ -99,16 +102,36 @@ function createPointerEvent(init: {
   clientY: number
   shiftKey?: boolean
   altKey?: boolean
+  type?: string
 }) {
   return {
     ...init,
+    type: init.type ?? 'pointerup',
     shiftKey: init.shiftKey ?? false,
     altKey: init.altKey ?? false,
     preventDefault: vi.fn(),
   }
 }
 
-function setup(initialTool: ToolId = 'move') {
+function createRectangle(id: string, x: number, y: number, size = 100): RectangleNode {
+  return {
+    id,
+    type: 'rectangle',
+    name: id,
+    parentId: null,
+    children: [],
+    transform: translation(x, y),
+    width: size,
+    height: size,
+    visible: true,
+    locked: false,
+    opacity: 1,
+    fills: [],
+    cornerRadius: 0,
+  }
+}
+
+function setup(initialTool: ToolId = 'move', scene: Document = new Document()) {
   const fakeWindow = createEventTarget()
   vi.stubGlobal('window', fakeWindow)
   vi.stubGlobal('HTMLElement', FakeHTMLElement)
@@ -117,22 +140,38 @@ function setup(initialTool: ToolId = 'move') {
   const onToolChange = vi.fn<(tool: ToolId) => void>()
   const onCreateRectangle = vi.fn<(bounds: Rect) => void>()
   const onDraftChange = vi.fn<() => void>()
+  const onOverlayChange = vi.fn<() => void>()
   const onUndo = vi.fn<() => void>()
   const onRedo = vi.fn<() => void>()
-  const controller = new CanvasController(
-    canvas as unknown as HTMLCanvasElement,
-    viewport,
-    { initialTool, onToolChange, onCreateRectangle, onDraftChange, onUndo, onRedo },
-  )
+  let selection: readonly NodeId[] = []
+  const onSelectionChange = vi.fn<(ids: readonly NodeId[]) => void>((ids) => {
+    selection = ids
+  })
+  const controller = new CanvasController(canvas as unknown as HTMLCanvasElement, viewport, {
+    initialTool,
+    scene,
+    getSelection: () => selection,
+    onToolChange,
+    onSelectionChange,
+    onCreateRectangle,
+    onDraftChange,
+    onOverlayChange,
+    onUndo,
+    onRedo,
+  })
   return {
     fakeWindow,
     canvas,
     viewport,
+    scene,
     onToolChange,
+    onSelectionChange,
     onCreateRectangle,
     onDraftChange,
+    onOverlayChange,
     onUndo,
     onRedo,
+    getSelection: () => selection,
     controller,
   }
 }
@@ -325,6 +364,58 @@ describe('CanvasController', () => {
     input.tagName = 'INPUT'
     fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyZ', ctrlKey: true, target: input as unknown as EventTarget }))
     expect(onUndo).not.toHaveBeenCalled()
+    controller.dispose()
+  })
+
+  it('selects the node under the cursor and clears on empty canvas', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle('a', 0, 0))
+    const { canvas, getSelection, controller } = setup('move', scene)
+    canvas.dispatch('pointerdown', createPointerEvent({ button: 0, pointerId: 1, clientX: 150, clientY: 100 }))
+    expect(getSelection()).toEqual(['a'])
+    canvas.dispatch('pointerdown', createPointerEvent({ button: 0, pointerId: 1, clientX: 400, clientY: 400 }))
+    expect(getSelection()).toEqual([])
+    controller.dispose()
+  })
+
+  it('toggles the selection with shift+click', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle('a', 0, 0))
+    scene.addNode(createRectangle('b', 200, 0))
+    const { canvas, getSelection, controller } = setup('move', scene)
+    const click = (clientX: number, shiftKey = false) =>
+      createPointerEvent({ button: 0, pointerId: 1, clientX, clientY: 100, shiftKey })
+    canvas.dispatch('pointerdown', click(150))
+    expect(getSelection()).toEqual(['a'])
+    canvas.dispatch('pointerdown', click(350, true))
+    expect(getSelection()).toEqual(['a', 'b'])
+    canvas.dispatch('pointerdown', click(350, true))
+    expect(getSelection()).toEqual(['a'])
+    controller.dispose()
+  })
+
+  it('selects all nodes on ctrl+a and clears the selection on escape', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle('a', 0, 0))
+    scene.addNode(createRectangle('b', 200, 0))
+    const { fakeWindow, getSelection, controller } = setup('move', scene)
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyA', ctrlKey: true }))
+    expect(getSelection()).toEqual(['a', 'b'])
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'Escape' }))
+    expect(getSelection()).toEqual([])
+    controller.dispose()
+  })
+
+  it('tracks the hovered node while moving over the canvas', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle('a', 0, 0))
+    const { canvas, controller } = setup('move', scene)
+    const move = (clientX: number) =>
+      createPointerEvent({ button: 0, pointerId: 1, clientX, clientY: 100 })
+    canvas.dispatch('pointermove', move(150))
+    expect(controller.hoveredId).toBe('a')
+    canvas.dispatch('pointermove', move(400))
+    expect(controller.hoveredId).toBeNull()
     controller.dispose()
   })
 })
