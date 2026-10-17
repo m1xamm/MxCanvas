@@ -3,14 +3,19 @@ import type { Dictionary } from './en'
 export const ru: Dictionary = {
   toolbarLabel: 'Инструменты',
   panelsLabel: 'Панели',
+  mainMenuLabel: 'Главное меню',
+  settings: 'Настройки',
+  closeLabel: 'Закрыть',
   layers: 'Слои',
   assets: 'Ресурсы',
   pageName: 'Страница 1',
   noLayers: 'Пока нет слоев',
   noAssets: 'Пока нет ресурсов',
   languageLabel: 'Язык',
-  languageRu: 'RU',
-  languageEn: 'EN',
+  languages: {
+    ru: 'Русский',
+    en: 'English',
+  },
   zoomLabel: 'Масштаб',
   tools: {
     move: 'Перемещение',
@@ -21,6 +26,9 @@ export const ru: Dictionary = {
     pen: 'Перо',
     text: 'Текст',
     hand: 'Рука',
+  },
+  shapes: {
+    rectangle: 'Прямоугольник',
   },
   sections: {
     position: 'Положение',

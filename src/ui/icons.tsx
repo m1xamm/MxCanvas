@@ -87,6 +87,23 @@ function HandIcon() {
   )
 }
 
+export function AppIcon() {
+  return (
+    <IconBase>
+      <rect x="3.75" y="3.75" width="16.5" height="16.5" rx="5" />
+      <path d="M8.5 15.5V8.5l3.5 4 3.5-4v7" />
+    </IconBase>
+  )
+}
+
+export function CloseIcon() {
+  return (
+    <IconBase>
+      <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />
+    </IconBase>
+  )
+}
+
 export const TOOL_ICONS: Record<ToolId, () => JSX.Element> = {
   move: MoveIcon,
   frame: FrameIcon,

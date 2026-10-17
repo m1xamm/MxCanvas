@@ -14,6 +14,7 @@ const EDITABLE_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT'])
 export interface CanvasControllerOptions {
   initialTool: ToolId
   onToolChange: (tool: ToolId) => void
+  isInputBlocked?: () => boolean
 }
 
 export class CanvasController {
@@ -110,6 +111,7 @@ export class CanvasController {
 
   #onKeyDown = (event: KeyboardEvent): void => {
     if (isEditableTarget(event.target)) return
+    if (this.#options.isInputBlocked?.()) return
     if (event.code === SPACE_KEY_CODE) {
       event.preventDefault()
       if (event.repeat) return

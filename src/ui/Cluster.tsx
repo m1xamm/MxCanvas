@@ -1,7 +1,7 @@
 import type { ComponentChildren } from 'preact'
 
 export type ClusterDirection = 'horizontal' | 'vertical'
-export type ClusterRole = 'group' | 'toolbar'
+export type ClusterRole = 'group' | 'toolbar' | 'menu'
 
 export interface ClusterProps {
   direction?: ClusterDirection

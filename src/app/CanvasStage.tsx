@@ -8,12 +8,18 @@ import { setTool, setZoom } from './store'
 
 export interface CanvasStageProps {
   tool: ToolId
+  inputBlocked: boolean
 }
 
-export function CanvasStage({ tool }: CanvasStageProps) {
+export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const controllerRef = useRef<CanvasController | null>(null)
+  const blockedRef = useRef(inputBlocked)
+
+  useEffect(() => {
+    blockedRef.current = inputBlocked
+  }, [inputBlocked])
 
   useEffect(() => {
     const container = containerRef.current
@@ -25,6 +31,7 @@ export function CanvasStage({ tool }: CanvasStageProps) {
     const controller = new CanvasController(canvas, viewport, {
       initialTool: tool,
       onToolChange: setTool,
+      isInputBlocked: () => blockedRef.current,
     })
     controllerRef.current = controller
 

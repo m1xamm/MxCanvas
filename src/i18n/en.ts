@@ -1,14 +1,19 @@
 export const en = {
   toolbarLabel: 'Tools',
   panelsLabel: 'Panels',
+  mainMenuLabel: 'Main menu',
+  settings: 'Settings',
+  closeLabel: 'Close',
   layers: 'Layers',
   assets: 'Assets',
   pageName: 'Page 1',
   noLayers: 'No layers yet',
   noAssets: 'No assets yet',
   languageLabel: 'Language',
-  languageRu: 'RU',
-  languageEn: 'EN',
+  languages: {
+    ru: 'Русский',
+    en: 'English',
+  },
   zoomLabel: 'Zoom',
   tools: {
     move: 'Move',
@@ -19,6 +24,9 @@ export const en = {
     pen: 'Pen',
     text: 'Text',
     hand: 'Hand',
+  },
+  shapes: {
+    rectangle: 'Rectangle',
   },
   sections: {
     position: 'Position',
