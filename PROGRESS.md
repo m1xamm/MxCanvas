@@ -44,3 +44,13 @@
 - Size label: an accent plate with "W × H" in px below the selection, visible whenever the selection is not empty and updated live while resizing.
 - Delete: Delete/Backspace runs one DeleteNodesCommand (subtrees cached with parent and index, restored on undo), the selection is cleared, text fields keep their keys.
 - Tests: 175 passing (hit testing, selection rules, move and resize math, box transforms, commands with undo/redo, controller gestures and hotkeys). Not verified live: look of the handles, the size plate and the resize cursors (no browser connected to the session).
+
+## Stage 4 — Docked sidebars, toolbar groups, zoom menu, round handles
+
+- Fix: arrow nudges pressed within 500ms of each other (key auto-repeat included) merge into one undoable command; Command.mergeWith plus a History merge window (injectable clock) do the merging, drag moves stay separate steps.
+- UI3 layout: the canvas fills the window, both sidebars (240px) dock full height over it with a darker tonal surface and 22px corners only on the canvas side; the existing clusters sit inside with 8px padding, sidebar pointer events never reach the canvas.
+- Left sidebar: main menu button, File/Assets tabs, a Pages block with "Page 1" and a Layers (or Assets) block with an empty state. Right sidebar: zoom dropdown, a Design tab and the placeholder property blocks.
+- Toolbar: five Figma-like groups (Move: V/H/K, Frame: F/Shift+S/S, Shapes: R/L/Shift+L/O/polygon/star, Pen: P/Shift+P, Text: T). Each group is one button showing the last used tool with a chevron that opens a cluster popup listing the tools and hotkeys; unimplemented tools are disabled, V/H/R still work.
+- Zoom menu: percentage dropdown with Zoom in (Ctrl+=), Zoom out (Ctrl+-), 100% (Shift+0), Fit (Shift+1) and Selection (Shift+2); pure fitBounds math sets the viewport so the bounds fit the free area between the sidebars with 64px padding, an empty document falls back to 100%.
+- Handles: 10px circles in screen space with a white fill and a 1.5px accent border; the hovered handle grows to 1.25x over 120ms, animated by the renderer inside requestAnimationFrame.
+- Tests: 205 passing (nudge merging, viewport fit math, toolbar group state and disabled tools, zoom hotkeys, handle hover tracking, plus the Stage 3 suites). Not verified live: the docked layout, popup menus and handle hover animation (no browser connected to the session).
