@@ -69,6 +69,9 @@ When unsure how something should behave, copy Figma. Hotkeys: V move, R rectangl
 - No silent stubs or fake implementations: anything unfinished must be listed in the report.
 - Do not refactor unrelated code. Do not change the architecture rules without asking.
 - If a decision is ambiguous, ask the user (max 3 questions at once).
+- Reply ONLY in Russian: chat messages, questions and the final report. Never switch to Chinese or any other language. Code and i18n keys stay English.
+- Do not rush. Do exactly what the stage prompt says, no more, no less. Before the report, re-read the stage prompt and verify every task item is really implemented; list every skipped or partial item under "Broken or deviating".
+- If the prompt does not say where a control or screen belongs, ask instead of guessing. Settings-type controls (language and similar) never go on the main screen.
 
 ## Report format (end of EVERY stage, in Russian)
 The report is read by another AI to plan the next stage. Max 30 lines. No fluff, no repeating the task, no restating unchanged code.
