@@ -5,6 +5,7 @@ import { nodeBox, nodeWorldRect, worldRectToBox } from '../transform'
 import type { Document } from '../document/document'
 import type { Command } from './command'
 import { applyNodeBoxChanges, type NodeBoxChange } from './node-box-change'
+import { topLevelIds } from './subtree'
 
 export class MoveNodesCommand implements Command {
   readonly label = 'move nodes'
@@ -32,20 +33,4 @@ export class MoveNodesCommand implements Command {
   undo(): void {
     applyNodeBoxChanges(this.#document, this.#changes, 'from')
   }
-}
-
-function topLevelIds(document: Document, ids: readonly NodeId[]): readonly NodeId[] {
-  const wanted = new Set(ids)
-  return ids.filter((id) => !hasMovedAncestor(document, id, wanted))
-}
-
-function hasMovedAncestor(document: Document, id: NodeId, wanted: ReadonlySet<NodeId>): boolean {
-  let parentId = document.getNode(id)?.parentId ?? null
-  while (parentId !== null) {
-    const parent = document.getNode(parentId)
-    if (!parent) return false
-    if (wanted.has(parentId)) return true
-    parentId = parent.parentId
-  }
-  return false
 }

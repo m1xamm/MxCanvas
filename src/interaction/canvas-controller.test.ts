@@ -141,6 +141,7 @@ function setup(initialTool: ToolId = 'move', scene: Document = new Document()) {
   const onToolChange = vi.fn<(tool: ToolId) => void>()
   const onMoveSelection = vi.fn<(delta: Vec2) => void>()
   const onResizeSelection = vi.fn<(changes: readonly NodeBoxChange[]) => void>()
+  const onDeleteSelection = vi.fn<() => void>()
   const onCreateRectangle = vi.fn<(bounds: Rect) => void>()
   const onDraftChange = vi.fn<() => void>()
   const onOverlayChange = vi.fn<() => void>()
@@ -158,6 +159,7 @@ function setup(initialTool: ToolId = 'move', scene: Document = new Document()) {
     onSelectionChange,
     onMoveSelection,
     onResizeSelection,
+    onDeleteSelection,
     onCreateRectangle,
     onDraftChange,
     onOverlayChange,
@@ -173,6 +175,7 @@ function setup(initialTool: ToolId = 'move', scene: Document = new Document()) {
     onSelectionChange,
     onMoveSelection,
     onResizeSelection,
+    onDeleteSelection,
     onCreateRectangle,
     onDraftChange,
     onOverlayChange,
@@ -459,6 +462,27 @@ describe('CanvasController', () => {
       createKeyEvent({ code: 'ArrowRight', target: input as unknown as EventTarget }),
     )
     expect(onMoveSelection).not.toHaveBeenCalled()
+    controller.dispose()
+  })
+
+  it('deletes the selection with the delete and backspace keys', () => {
+    const { fakeWindow, onDeleteSelection, controller } = setup()
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'Delete' }))
+    expect(onDeleteSelection).toHaveBeenCalledTimes(1)
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'Backspace' }))
+    expect(onDeleteSelection).toHaveBeenCalledTimes(2)
+    controller.dispose()
+  })
+
+  it('ignores the delete keys inside editable targets', () => {
+    const { fakeWindow, onDeleteSelection, controller } = setup()
+    const input = new FakeHTMLElement()
+    input.tagName = 'INPUT'
+    fakeWindow.dispatch(
+      'keydown',
+      createKeyEvent({ code: 'Backspace', target: input as unknown as EventTarget }),
+    )
+    expect(onDeleteSelection).not.toHaveBeenCalled()
     controller.dispose()
   })
 

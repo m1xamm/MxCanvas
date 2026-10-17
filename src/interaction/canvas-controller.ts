@@ -29,6 +29,8 @@ const NUDGE_DELTAS: ReadonlyMap<string, Vec2> = new Map([
   ['ArrowDown', { x: 0, y: 1 }],
 ])
 
+const DELETE_KEY_CODES = new Set(['Delete', 'Backspace'])
+
 const EDITABLE_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT'])
 
 export interface CanvasControllerOptions {
@@ -39,6 +41,7 @@ export interface CanvasControllerOptions {
   onSelectionChange: (ids: readonly NodeId[]) => void
   onMoveSelection: (delta: Vec2) => void
   onResizeSelection: (changes: readonly NodeBoxChange[]) => void
+  onDeleteSelection: () => void
   onCreateRectangle: (bounds: Rect) => void
   onDraftChange: () => void
   onOverlayChange: () => void
@@ -251,6 +254,11 @@ export class CanvasController {
     }
     if (event.ctrlKey || event.metaKey) {
       if (!event.altKey) this.#handleModifierShortcut(event)
+      return
+    }
+    if (DELETE_KEY_CODES.has(event.code)) {
+      event.preventDefault()
+      this.#options.onDeleteSelection()
       return
     }
     if (event.altKey) return
