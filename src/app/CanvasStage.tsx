@@ -7,16 +7,10 @@ import { CanvasController } from '../interaction/canvas-controller'
 import { selectionStore, setSelection } from '../interaction/selection'
 import type { ToolId } from '../interaction/tools'
 import { Canvas2DRenderer } from '../render/canvas2d-renderer'
-import {
-  createRectangle,
-  deleteSelection,
-  history,
-  moveSelection,
-  nudgeSelection,
-  resizeSelection,
-  scene,
-} from './editor'
+import { createRectangle, deleteSelection, history, moveSelection, nudgeSelection, resizeSelection, scene } from './editor'
 import { observeDevicePixelRatio } from './observe-device-pixel-ratio'
+import { readViewportArea } from './viewport-area'
+import { setViewportActions } from './viewport-actions'
 import { setTool, setZoom } from './store'
 
 const NO_PREVIEWS: ReadonlyMap<NodeId, NodeBox> = new Map<NodeId, NodeBox>()
@@ -72,10 +66,18 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       onOverlayChange: () => renderer.requestRender(),
       onUndo: () => history.undo(),
       onRedo: () => history.redo(),
+      getViewportArea: () => readViewportArea(canvas.clientWidth, canvas.clientHeight),
       isInputBlocked: () => blockedRef.current,
     })
     controller = createdController
     controllerRef.current = createdController
+    setViewportActions({
+      zoomIn: () => createdController.zoomIn(),
+      zoomOut: () => createdController.zoomOut(),
+      zoomReset: () => createdController.zoomReset(),
+      zoomToFit: () => createdController.zoomToFit(),
+      zoomToSelection: () => createdController.zoomToSelection(),
+    })
 
     const resize = () => {
       const rect = container.getBoundingClientRect()
@@ -100,6 +102,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       unsubscribeViewport()
       unsubscribeScene()
       unsubscribeSelection()
+      setViewportActions(null)
       createdController.dispose()
       renderer.dispose()
       controllerRef.current = null

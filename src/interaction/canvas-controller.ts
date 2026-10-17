@@ -2,8 +2,9 @@ import type { NodeId, SceneReader } from '../core/document/types'
 import type { NodeBoxChange } from '../core/commands/node-box-change'
 import type { Vec2 } from '../core/math/matrix'
 import type { Rect } from '../core/math/rect'
-import type { NodeBox } from '../core/transform'
+import { sceneBounds, type NodeBox } from '../core/transform'
 import type { Viewport } from '../core/viewport'
+import { fitBounds } from '../core/viewport-fit'
 import { collectSelectableIds } from './hit-testing'
 import { rectangleFromDrag, type RectangleDragModifiers } from './rectangle-draft'
 import { SelectionTool, type SelectionPointerInput } from './selection-tool'
@@ -12,11 +13,16 @@ import { normalizeWheelDelta, wheelPanDelta, wheelZoomFactor } from './wheel'
 
 const SPACE_KEY_CODE = 'Space'
 const ZOOM_RESET_KEY_CODE = 'Digit0'
+const ZOOM_FIT_KEY_CODE = 'Digit1'
+const ZOOM_SELECTION_KEY_CODE = 'Digit2'
+const ZOOM_IN_KEY_CODE = 'Equal'
+const ZOOM_OUT_KEY_CODE = 'Minus'
 const ESCAPE_KEY_CODE = 'Escape'
 const SELECT_ALL_KEY_CODE = 'KeyA'
 const UNDO_KEY_CODE = 'KeyZ'
 const REDO_ALTERNATE_KEY_CODE = 'KeyY'
 const ZOOM_RESET_TARGET = 1
+const ZOOM_STEP = 2
 const NUDGE_STEP_PX = 1
 const NUDGE_LARGE_STEP_PX = 10
 const MIDDLE_MOUSE_BUTTON = 1
@@ -48,6 +54,7 @@ export interface CanvasControllerOptions {
   onOverlayChange: () => void
   onUndo: () => void
   onRedo: () => void
+  getViewportArea?: () => Rect
   isInputBlocked?: () => boolean
 }
 
@@ -120,6 +127,33 @@ export class CanvasController {
     this.#selectionTool.cancel()
     if (tool !== 'move') this.#selectionTool.clearHover()
     this.#updateCursor()
+  }
+
+  zoomIn(): void {
+    this.#viewport.zoomAt(this.#viewportCenter(), ZOOM_STEP)
+  }
+
+  zoomOut(): void {
+    this.#viewport.zoomAt(this.#viewportCenter(), 1 / ZOOM_STEP)
+  }
+
+  zoomReset(): void {
+    this.#viewport.zoomAt(this.#viewportCenter(), ZOOM_RESET_TARGET / this.#viewport.zoom)
+  }
+
+  zoomToFit(): void {
+    const bounds = sceneBounds(this.#options.scene)
+    if (!bounds) {
+      this.zoomReset()
+      return
+    }
+    this.#applyFit(bounds)
+  }
+
+  zoomToSelection(): void {
+    const bounds = this.#selectionTool.selectionBounds
+    if (!bounds) return
+    this.#applyFit(bounds)
   }
 
   dispose(): void {
@@ -263,11 +297,7 @@ export class CanvasController {
       return
     }
     if (event.altKey) return
-    if (event.shiftKey && event.code === ZOOM_RESET_KEY_CODE) {
-      event.preventDefault()
-      this.#resetZoom()
-      return
-    }
+    if (event.shiftKey && this.#handleShiftShortcut(event)) return
     const nudge = NUDGE_DELTAS.get(event.code)
     if (nudge) {
       event.preventDefault()
@@ -311,7 +341,36 @@ export class CanvasController {
       this.#options.onSelectionChange(collectSelectableIds(this.#options.scene))
       return
     }
+    if (event.code === ZOOM_IN_KEY_CODE) {
+      event.preventDefault()
+      this.zoomIn()
+      return
+    }
+    if (event.code === ZOOM_OUT_KEY_CODE) {
+      event.preventDefault()
+      this.zoomOut()
+      return
+    }
     this.#handleHistoryShortcut(event)
+  }
+
+  #handleShiftShortcut(event: KeyboardEvent): boolean {
+    if (event.code === ZOOM_RESET_KEY_CODE) {
+      event.preventDefault()
+      this.zoomReset()
+      return true
+    }
+    if (event.code === ZOOM_FIT_KEY_CODE) {
+      event.preventDefault()
+      this.zoomToFit()
+      return true
+    }
+    if (event.code === ZOOM_SELECTION_KEY_CODE) {
+      event.preventDefault()
+      this.zoomToSelection()
+      return true
+    }
+    return false
   }
 
   #handleHistoryShortcut(event: KeyboardEvent): void {
@@ -350,8 +409,16 @@ export class CanvasController {
     }
   }
 
-  #resetZoom(): void {
-    this.#viewport.zoomAt(this.#viewportCenter(), ZOOM_RESET_TARGET / this.#viewport.zoom)
+  #applyFit(bounds: Rect): void {
+    const fit = fitBounds(bounds, this.#viewportArea())
+    if (!fit) return
+    this.#viewport.setView(fit.pan, fit.zoom)
+  }
+
+  #viewportArea(): Rect {
+    const area = this.#options.getViewportArea?.()
+    if (area) return area
+    return { x: 0, y: 0, width: this.#canvas.clientWidth, height: this.#canvas.clientHeight }
   }
 
   #updateCursor(): void {

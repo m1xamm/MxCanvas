@@ -18,6 +18,11 @@ export const en = {
     en: 'English',
   },
   zoomLabel: 'Zoom',
+  zoomIn: 'Zoom in',
+  zoomOut: 'Zoom out',
+  zoomTo100: 'Zoom to 100%',
+  zoomToFit: 'Zoom to fit',
+  zoomToSelection: 'Zoom to selection',
   toolGroupMenu: 'All tools',
   tools: {
     move: 'Move',

@@ -1,7 +1,7 @@
 import type { MessageKey } from '../i18n/i18n'
 import { useTranslation } from '../i18n/use-i18n'
 import { Cluster } from './Cluster'
-import { formatZoomPercent } from './format-zoom'
+import { ZoomMenu } from './ZoomMenu'
 
 export interface RightPanelProps {
   zoom: number
@@ -22,10 +22,8 @@ export function RightPanel({ zoom }: RightPanelProps) {
 
   return (
     <Cluster direction="vertical" class="side-panel side-panel--right">
-      <div class="block block--row">
-        <span class="zoom-readout" aria-live="polite" aria-label={t('zoomLabel')}>
-          {formatZoomPercent(zoom)}
-        </span>
+      <div class="block block--tight">
+        <ZoomMenu zoom={zoom} />
       </div>
       <div class="block block--tight">
         <Cluster class="segmented-control" role="group" ariaLabel={t('design')}>

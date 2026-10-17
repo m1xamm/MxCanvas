@@ -153,8 +153,25 @@
   color: var(--color-on-surface-subtle);
 }
 
+.zoom-menu {
+  position: relative;
+}
+
+.zoom-menu__button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border-radius: calc(var(--radius-outer) - var(--space-1));
+}
+
+.zoom-menu__popup {
+  min-width: 200px;
+}
+
 .zoom-readout {
-  margin-left: auto;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-sm);
   font-variant-numeric: tabular-nums;
@@ -231,6 +248,11 @@
 .menu-popup--above {
   top: auto;
   bottom: calc(100% + var(--gap-cluster));
+}
+
+.menu-popup--right {
+  left: auto;
+  right: 0;
 }
 
 .menu-item {

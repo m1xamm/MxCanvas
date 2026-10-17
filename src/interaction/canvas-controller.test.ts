@@ -132,7 +132,11 @@ function createRectangle(id: string, x: number, y: number, size = 100): Rectangl
   }
 }
 
-function setup(initialTool: ToolId = 'move', scene: Document = new Document()) {
+function setup(
+  initialTool: ToolId = 'move',
+  scene: Document = new Document(),
+  options: { getViewportArea?: () => Rect } = {},
+) {
   const fakeWindow = createEventTarget()
   vi.stubGlobal('window', fakeWindow)
   vi.stubGlobal('HTMLElement', FakeHTMLElement)
@@ -167,6 +171,7 @@ function setup(initialTool: ToolId = 'move', scene: Document = new Document()) {
     onOverlayChange,
     onUndo,
     onRedo,
+    getViewportArea: options.getViewportArea,
   })
   return {
     fakeWindow,
@@ -250,6 +255,69 @@ describe('CanvasController', () => {
     viewport.zoomAt({ x: 400, y: 300 }, 2.5)
     fakeWindow.dispatch('keydown', createKeyEvent({ code: 'Digit0', shiftKey: true }))
     expect(viewport.zoom).toBe(1)
+    controller.dispose()
+  })
+
+  it('zooms in and out with ctrl+equal and ctrl+minus', () => {
+    const { fakeWindow, viewport, controller } = setup()
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'Equal', ctrlKey: true }))
+    expect(viewport.zoom).toBe(2)
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'Minus', ctrlKey: true }))
+    expect(viewport.zoom).toBe(1)
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'Minus', metaKey: true }))
+    expect(viewport.zoom).toBe(0.5)
+    controller.dispose()
+  })
+
+  it('zooms to fit on shift+1', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle('a', 0, 0))
+    const { fakeWindow, viewport, controller } = setup('move', scene)
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'Digit1', shiftKey: true }))
+    expect(viewport.zoom).toBeCloseTo(4.72, 5)
+    expect(viewport.pan.x).toBeCloseTo(164, 5)
+    expect(viewport.pan.y).toBeCloseTo(64, 5)
+    controller.dispose()
+  })
+
+  it('falls back to 100 percent on zoom to fit with an empty document', () => {
+    const { fakeWindow, viewport, controller } = setup()
+    viewport.setView({ x: 0, y: 0 }, 3)
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'Digit1', shiftKey: true }))
+    expect(viewport.zoom).toBe(1)
+    controller.dispose()
+  })
+
+  it('zooms to the selection on shift+2', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle('a', 0, 0))
+    const { fakeWindow, canvas, viewport, controller } = setup('move', scene)
+    canvas.dispatch('pointerdown', createPointerEvent({ button: 0, pointerId: 1, clientX: 150, clientY: 100 }))
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'Digit2', shiftKey: true }))
+    expect(viewport.zoom).toBeCloseTo(4.72, 5)
+    controller.dispose()
+  })
+
+  it('ignores zoom to selection without a selection', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle('a', 0, 0))
+    const { fakeWindow, viewport, controller } = setup('move', scene)
+    viewport.setView({ x: 0, y: 0 }, 2)
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'Digit2', shiftKey: true }))
+    expect(viewport.zoom).toBe(2)
+    controller.dispose()
+  })
+
+  it('fits the content into the area between the sidebars', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle('a', 0, 0))
+    const { fakeWindow, viewport, controller } = setup('move', scene, {
+      getViewportArea: () => ({ x: 240, y: 0, width: 320, height: 600 }),
+    })
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'Digit1', shiftKey: true }))
+    expect(viewport.zoom).toBeCloseTo(1.92, 5)
+    expect(viewport.pan.x).toBeCloseTo(304, 5)
+    expect(viewport.pan.y).toBeCloseTo(204, 5)
     controller.dispose()
   })
 

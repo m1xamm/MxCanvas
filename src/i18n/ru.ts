@@ -20,6 +20,11 @@ export const ru: Dictionary = {
     en: 'English',
   },
   zoomLabel: 'Масштаб',
+  zoomIn: 'Увеличить',
+  zoomOut: 'Уменьшить',
+  zoomTo100: 'Масштаб 100%',
+  zoomToFit: 'Показать всё',
+  zoomToSelection: 'Показать выделение',
   toolGroupMenu: 'Все инструменты',
   tools: {
     move: 'Перемещение',
