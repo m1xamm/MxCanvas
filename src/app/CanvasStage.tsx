@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'preact/hooks'
 import { Viewport } from '../core/viewport'
 import { CanvasController } from '../interaction/canvas-controller'
+import { selectionStore } from '../interaction/selection'
 import type { ToolId } from '../interaction/tools'
 import { Canvas2DRenderer } from '../render/canvas2d-renderer'
+import { scene } from './editor'
 import { observeDevicePixelRatio } from './observe-device-pixel-ratio'
 import { setTool, setZoom } from './store'
 
@@ -27,7 +29,10 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
     if (!container || !canvas) return
 
     const viewport = new Viewport()
-    const renderer = new Canvas2DRenderer(canvas, viewport)
+    const renderer = new Canvas2DRenderer(canvas, viewport, {
+      scene,
+      getSelection: () => selectionStore.get(),
+    })
     const controller = new CanvasController(canvas, viewport, {
       initialTool: tool,
       onToolChange: setTool,
@@ -45,6 +50,8 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       renderer.requestRender()
       setZoom(viewport.zoom)
     })
+    const unsubscribeScene = scene.subscribe(() => renderer.requestRender())
+    const unsubscribeSelection = selectionStore.subscribe(() => renderer.requestRender())
     const stopObservingDpr = observeDevicePixelRatio(resize)
     const resizeObserver = new ResizeObserver(resize)
     resizeObserver.observe(container)
@@ -54,6 +61,8 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       resizeObserver.disconnect()
       stopObservingDpr()
       unsubscribeViewport()
+      unsubscribeScene()
+      unsubscribeSelection()
       controller.dispose()
       renderer.dispose()
       controllerRef.current = null
