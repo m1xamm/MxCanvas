@@ -1,0 +1,127 @@
+.app-shell {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--panel-width) minmax(0, 1fr) var(--panel-width);
+  height: 100%;
+  overflow: hidden;
+}
+
+.canvas-stage {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-canvas);
+}
+
+.canvas-surface {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  background: var(--color-surface);
+  border-right: 1px solid var(--color-outline-variant);
+}
+
+.side-panel--right {
+  border-right: none;
+  border-left: 1px solid var(--color-outline-variant);
+}
+
+.panel-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: var(--panel-header-height);
+  padding: 0 var(--space-3);
+  border-bottom: 1px solid var(--color-outline-variant);
+}
+
+.panel-tab {
+  border: none;
+  background: none;
+  padding: var(--space-2) 0;
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-on-surface-variant);
+  border-radius: var(--radius-xs);
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--motion-fast) var(--motion-easing);
+}
+
+.panel-tab:hover {
+  color: var(--color-on-surface);
+}
+
+.panel-tab--active {
+  color: var(--color-on-surface);
+}
+
+.zoom-readout {
+  margin-left: auto;
+  font-size: var(--font-size-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-on-surface-variant);
+}
+
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-3);
+}
+
+.panel-empty {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  color: var(--color-on-surface-subtle);
+}
+
+.toolbar {
+  position: absolute;
+  left: 50%;
+  bottom: var(--space-4);
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-overlay);
+  z-index: 10;
+}
+
+.tool-button {
+  display: grid;
+  place-items: center;
+  width: var(--toolbar-button-size);
+  height: var(--toolbar-button-size);
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-on-surface);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background var(--motion-fast) var(--motion-easing),
+    color var(--motion-fast) var(--motion-easing);
+}
+
+.tool-button:hover:not(:disabled) {
+  background: var(--color-hover);
+}
+
+.tool-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.tool-button--active,
+.tool-button--active:hover {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
