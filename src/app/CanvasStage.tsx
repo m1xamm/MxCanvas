@@ -46,6 +46,8 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
         setTool('move')
       },
       onDraftChange: () => renderer.requestRender(),
+      onUndo: () => history.undo(),
+      onRedo: () => history.redo(),
       isInputBlocked: () => blockedRef.current,
     })
     controller = createdController

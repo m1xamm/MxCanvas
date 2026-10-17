@@ -8,6 +8,8 @@ import { normalizeWheelDelta, wheelPanDelta, wheelZoomFactor } from './wheel'
 const SPACE_KEY_CODE = 'Space'
 const ZOOM_RESET_KEY_CODE = 'Digit0'
 const ESCAPE_KEY_CODE = 'Escape'
+const UNDO_KEY_CODE = 'KeyZ'
+const REDO_ALTERNATE_KEY_CODE = 'KeyY'
 const ZOOM_RESET_TARGET = 1
 const MIDDLE_MOUSE_BUTTON = 1
 const PRIMARY_MOUSE_BUTTON = 0
@@ -19,6 +21,8 @@ export interface CanvasControllerOptions {
   onToolChange: (tool: ToolId) => void
   onCreateRectangle: (bounds: Rect) => void
   onDraftChange: () => void
+  onUndo: () => void
+  onRedo: () => void
   isInputBlocked?: () => boolean
 }
 
@@ -169,7 +173,11 @@ export class CanvasController {
       this.#updateCursor()
       return
     }
-    if (event.ctrlKey || event.metaKey || event.altKey) return
+    if (event.ctrlKey || event.metaKey) {
+      if (!event.altKey) this.#handleHistoryShortcut(event)
+      return
+    }
+    if (event.altKey) return
     if (event.shiftKey && event.code === ZOOM_RESET_KEY_CODE) {
       event.preventDefault()
       this.#resetZoom()
@@ -192,6 +200,22 @@ export class CanvasController {
     this.#spaceDown = false
     this.#cancelDraft()
     this.#updateCursor()
+  }
+
+  #handleHistoryShortcut(event: KeyboardEvent): void {
+    if (event.code === UNDO_KEY_CODE) {
+      event.preventDefault()
+      if (event.shiftKey) {
+        this.#options.onRedo()
+      } else {
+        this.#options.onUndo()
+      }
+      return
+    }
+    if (event.code === REDO_ALTERNATE_KEY_CODE) {
+      event.preventDefault()
+      this.#options.onRedo()
+    }
   }
 
   #selectTool(tool: ToolId): void {

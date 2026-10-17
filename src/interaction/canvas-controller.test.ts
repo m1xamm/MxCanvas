@@ -117,10 +117,12 @@ function setup(initialTool: ToolId = 'move') {
   const onToolChange = vi.fn<(tool: ToolId) => void>()
   const onCreateRectangle = vi.fn<(bounds: Rect) => void>()
   const onDraftChange = vi.fn<() => void>()
+  const onUndo = vi.fn<() => void>()
+  const onRedo = vi.fn<() => void>()
   const controller = new CanvasController(
     canvas as unknown as HTMLCanvasElement,
     viewport,
-    { initialTool, onToolChange, onCreateRectangle, onDraftChange },
+    { initialTool, onToolChange, onCreateRectangle, onDraftChange, onUndo, onRedo },
   )
   return {
     fakeWindow,
@@ -129,6 +131,8 @@ function setup(initialTool: ToolId = 'move') {
     onToolChange,
     onCreateRectangle,
     onDraftChange,
+    onUndo,
+    onRedo,
     controller,
   }
 }
@@ -299,6 +303,28 @@ describe('CanvasController', () => {
     expect(controller.draft).toBeNull()
     canvas.dispatch('pointerup', createPointerEvent({ button: 0, pointerId: 8, clientX: 220, clientY: 180 }))
     expect(onCreateRectangle).not.toHaveBeenCalled()
+    controller.dispose()
+  })
+
+  it('calls undo and redo from the history shortcuts', () => {
+    const { fakeWindow, onUndo, onRedo, controller } = setup()
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyZ', ctrlKey: true }))
+    expect(onUndo).toHaveBeenCalledTimes(1)
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyZ', ctrlKey: true, shiftKey: true }))
+    expect(onRedo).toHaveBeenCalledTimes(1)
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyY', ctrlKey: true }))
+    expect(onRedo).toHaveBeenCalledTimes(2)
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyZ', metaKey: true }))
+    expect(onUndo).toHaveBeenCalledTimes(2)
+    controller.dispose()
+  })
+
+  it('ignores history shortcuts inside editable targets', () => {
+    const { fakeWindow, onUndo, controller } = setup()
+    const input = new FakeHTMLElement()
+    input.tagName = 'INPUT'
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyZ', ctrlKey: true, target: input as unknown as EventTarget }))
+    expect(onUndo).not.toHaveBeenCalled()
     controller.dispose()
   })
 })
