@@ -1,14 +1,29 @@
 import type { Mat2D } from '../core/math/matrix'
 import { transformRect, type Rect } from '../core/math/rect'
-import { handlePoint, RESIZE_HANDLE_IDS, RESIZE_HANDLE_SIZE_PX } from '../interaction/resize'
+import {
+  handlePoint,
+  RESIZE_HANDLE_IDS,
+  RESIZE_HANDLE_SIZE_PX,
+  type ResizeHandleId,
+} from '../interaction/resize'
 import type { ThemeColors } from './theme-colors'
 
 const BORDER_SCREEN_PX = 1
+const HANDLE_BORDER_PX = 1.5
 const LABEL_FONT_SIZE_PX = 12
 const LABEL_PADDING_X_PX = 6
 const LABEL_PADDING_Y_PX = 3
 const LABEL_GAP_PX = 8
 const LABEL_RADIUS_PX = 4
+
+export const HANDLE_HOVER_DURATION_MS = 120
+export const HANDLE_HOVER_MAX_SCALE = 1.25
+
+export function handleHoverScale(elapsedMs: number): number {
+  if (elapsedMs >= HANDLE_HOVER_DURATION_MS) return HANDLE_HOVER_MAX_SCALE
+  const progress = Math.max(elapsedMs, 0) / HANDLE_HOVER_DURATION_MS
+  return 1 + (HANDLE_HOVER_MAX_SCALE - 1) * progress
+}
 
 export interface SelectionOverlayInput {
   context: CanvasRenderingContext2D
@@ -16,6 +31,8 @@ export interface SelectionOverlayInput {
   bounds: Rect | null
   colors: ThemeColors
   devicePixelRatio: number
+  hoveredHandle?: ResizeHandleId | null
+  hoverScale?: number
 }
 
 export function drawSelectionOverlay(input: SelectionOverlayInput): void {
@@ -26,7 +43,7 @@ export function drawSelectionOverlay(input: SelectionOverlayInput): void {
   context.lineWidth = BORDER_SCREEN_PX
   context.strokeStyle = colors.primary
   strokePixelRect(context, screen)
-  drawHandles(context, screen, colors)
+  drawHandles(context, screen, colors, input.hoveredHandle ?? null, input.hoverScale ?? 1)
   drawSizeLabel(context, screen, bounds, colors)
 }
 
@@ -34,21 +51,20 @@ function drawHandles(
   context: CanvasRenderingContext2D,
   bounds: Rect,
   colors: ThemeColors,
+  hoveredHandle: ResizeHandleId | null,
+  hoverScale: number,
 ): void {
-  const half = RESIZE_HANDLE_SIZE_PX / 2
+  const radius = RESIZE_HANDLE_SIZE_PX / 2
   context.fillStyle = colors.onSurface
   context.strokeStyle = colors.primary
+  context.lineWidth = HANDLE_BORDER_PX
   for (const handle of RESIZE_HANDLE_IDS) {
     const center = handlePoint(bounds, handle)
-    const x = Math.round(center.x - half)
-    const y = Math.round(center.y - half)
-    context.fillRect(x, y, RESIZE_HANDLE_SIZE_PX, RESIZE_HANDLE_SIZE_PX)
-    context.strokeRect(
-      x + 0.5,
-      y + 0.5,
-      RESIZE_HANDLE_SIZE_PX - 1,
-      RESIZE_HANDLE_SIZE_PX - 1,
-    )
+    const scale = handle === hoveredHandle ? hoverScale : 1
+    context.beginPath()
+    context.arc(center.x, center.y, radius * scale, 0, Math.PI * 2)
+    context.fill()
+    context.stroke()
   }
 }
 

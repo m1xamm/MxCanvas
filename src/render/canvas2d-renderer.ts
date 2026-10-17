@@ -4,9 +4,14 @@ import { multiply, scaling, type Mat2D } from '../core/math/matrix'
 import { transformRect, type Rect } from '../core/math/rect'
 import { boxWorldTransform, type NodeBox } from '../core/transform'
 import type { Viewport } from '../core/viewport'
+import type { ResizeHandleId } from '../interaction/resize'
 import { collectVisibleNodes } from './culling'
 import type { Renderer } from './renderer'
-import { drawSelectionOverlay } from './selection-overlay'
+import {
+  drawSelectionOverlay,
+  HANDLE_HOVER_DURATION_MS,
+  handleHoverScale,
+} from './selection-overlay'
 import { readThemeColors, type ThemeColors } from './theme-colors'
 
 const OUTLINE_SCREEN_PX = 1
@@ -17,6 +22,7 @@ export interface Canvas2DRendererOptions {
   scene: SceneReader
   getSelection: () => readonly NodeId[]
   getHoveredId?: () => NodeId | null
+  getHoveredHandle?: () => ResizeHandleId | null
   getMarquee?: () => Rect | null
   getPreviews?: () => ReadonlyMap<NodeId, NodeBox>
   getSelectionBounds?: () => Rect | null
@@ -30,6 +36,7 @@ export class Canvas2DRenderer implements Renderer {
   #scene: SceneReader
   #getSelection: () => readonly NodeId[]
   #getHoveredId: () => NodeId | null
+  #getHoveredHandle: () => ResizeHandleId | null
   #getMarquee: () => Rect | null
   #getPreviews: () => ReadonlyMap<NodeId, NodeBox>
   #getSelectionBounds: () => Rect | null
@@ -40,6 +47,8 @@ export class Canvas2DRenderer implements Renderer {
   #cssHeight = 1
   #visibleNodes: SceneNodeUnion[] = []
   #previews: ReadonlyMap<NodeId, NodeBox> = new Map()
+  #hoveredHandle: ResizeHandleId | null = null
+  #hoverStartedAt = 0
   #dirty = false
   #frameHandle = 0
 
@@ -52,6 +61,7 @@ export class Canvas2DRenderer implements Renderer {
     this.#scene = options.scene
     this.#getSelection = options.getSelection
     this.#getHoveredId = options.getHoveredId ?? (() => null)
+    this.#getHoveredHandle = options.getHoveredHandle ?? (() => null)
     this.#getMarquee = options.getMarquee ?? (() => null)
     this.#getPreviews = options.getPreviews ?? (() => new Map())
     this.#getSelectionBounds = options.getSelectionBounds ?? (() => null)
@@ -80,7 +90,7 @@ export class Canvas2DRenderer implements Renderer {
     this.#dirty = false
   }
 
-  #draw = (): void => {
+  #draw = (time: number): void => {
     const context = this.#context
     this.#dirty = false
     this.#previews = this.#getPreviews()
@@ -99,13 +109,27 @@ export class Canvas2DRenderer implements Renderer {
     this.#drawSelectionOutline(deviceViewport)
     this.#drawMarquee()
     this.#drawDraft(deviceViewport)
+    const hoveredHandle = this.#getHoveredHandle()
     drawSelectionOverlay({
       context: this.#context,
       viewportMatrix: this.#viewport.matrix(),
       bounds: this.#getSelectionBounds(),
       colors: this.#colors,
       devicePixelRatio: this.#devicePixelRatio,
+      hoveredHandle,
+      hoverScale: this.#hoverScale(hoveredHandle, time),
     })
+  }
+
+  #hoverScale(handle: ResizeHandleId | null, time: number): number {
+    if (handle !== this.#hoveredHandle) {
+      this.#hoveredHandle = handle
+      this.#hoverStartedAt = time
+    }
+    if (!handle) return 1
+    const elapsed = time - this.#hoverStartedAt
+    if (elapsed < HANDLE_HOVER_DURATION_MS) this.requestRender()
+    return handleHoverScale(elapsed)
   }
 
   #drawNode(node: SceneNodeUnion, deviceViewport: Mat2D): void {

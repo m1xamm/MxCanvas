@@ -575,4 +575,21 @@ describe('CanvasController', () => {
     expect(onResizeSelection.mock.calls[0]?.[0]?.[0]?.to.height).toBe(150)
     controller.dispose()
   })
+
+  it('tracks the hovered resize handle for the overlay', () => {
+    const scene = new Document()
+    scene.addNode(createRectangle('a', 0, 0))
+    const { canvas, controller } = setup('move', scene)
+    const at = (clientX: number, clientY: number) =>
+      createPointerEvent({ button: 0, pointerId: 1, clientX, clientY })
+    canvas.dispatch('pointerdown', at(150, 100))
+    canvas.dispatch('pointerup', at(150, 100))
+    canvas.dispatch('pointermove', at(200, 150))
+    expect(controller.hoveredHandle).toBe('se')
+    expect(canvas.style.cursor).toBe('nwse-resize')
+    canvas.dispatch('pointermove', at(400, 400))
+    expect(controller.hoveredHandle).toBeNull()
+    expect(canvas.style.cursor).toBe('default')
+    controller.dispose()
+  })
 })

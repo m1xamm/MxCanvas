@@ -7,6 +7,7 @@ import type { Viewport } from '../core/viewport'
 import { fitBounds } from '../core/viewport-fit'
 import { collectSelectableIds } from './hit-testing'
 import { rectangleFromDrag, type RectangleDragModifiers } from './rectangle-draft'
+import type { ResizeHandleId } from './resize'
 import { SelectionTool, type SelectionPointerInput } from './selection-tool'
 import { TOOL_HOTKEYS, type ToolId } from './tools'
 import { normalizeWheelDelta, wheelPanDelta, wheelZoomFactor } from './wheel'
@@ -114,6 +115,10 @@ export class CanvasController {
 
   get previews(): ReadonlyMap<NodeId, NodeBox> {
     return this.#selectionTool.previews
+  }
+
+  get hoveredHandle(): ResizeHandleId | null {
+    return this.#selectionTool.hoveredHandle
   }
 
   get selectionBounds(): Rect | null {
@@ -432,7 +437,7 @@ export class CanvasController {
       return
     }
     this.#canvas.style.cursor =
-      this.#tool === 'move' ? this.#selectionTool.cursorAt(this.#pointer) : 'default'
+      this.#tool === 'move' ? this.#selectionTool.cursorAt() : 'default'
   }
 
   #viewportCenter(): Vec2 {

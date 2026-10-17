@@ -3,7 +3,7 @@ import { normalizeRect, type Rect } from '../core/math/rect'
 
 export type ResizeHandleId = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w'
 
-export const RESIZE_HANDLE_SIZE_PX = 8
+export const RESIZE_HANDLE_SIZE_PX = 10
 export const MIN_RESIZE_SIZE = 1
 
 const MIDDLE = 0.5

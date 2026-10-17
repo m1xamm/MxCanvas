@@ -41,6 +41,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       scene,
       getSelection: () => selectionStore.get(),
       getHoveredId: () => controller?.hoveredId ?? null,
+      getHoveredHandle: () => controller?.hoveredHandle ?? null,
       getMarquee: () => controller?.marquee ?? null,
       getPreviews: () => controller?.previews ?? NO_PREVIEWS,
       getSelectionBounds: () => controller?.selectionBounds ?? null,

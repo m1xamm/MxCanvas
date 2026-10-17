@@ -76,6 +76,7 @@ export class SelectionTool {
   #viewport: Viewport
   #options: SelectionToolOptions
   #hoveredId: NodeId | null = null
+  #hoveredHandle: ResizeHandleId | null = null
   #gesture: Gesture | null = null
   #previews: ReadonlyMap<NodeId, NodeBox> = NO_PREVIEWS
   #previewBounds: Rect | null = null
@@ -88,6 +89,10 @@ export class SelectionTool {
 
   get hoveredId(): NodeId | null {
     return this.#hoveredId
+  }
+
+  get hoveredHandle(): ResizeHandleId | null {
+    return this.#hoveredHandle
   }
 
   get marquee(): Rect | null {
@@ -104,6 +109,7 @@ export class SelectionTool {
 
   pointerDown(input: SelectionPointerInput): void {
     this.#setHoveredId(null)
+    this.#setHoveredHandle(null)
     const selection = this.#options.getSelection()
     const bounds = this.#selectedRect()
     const handle = bounds ? handleAtPoint(this.#screenRect(bounds), input.screen) : null
@@ -189,6 +195,7 @@ export class SelectionTool {
     } else {
       this.#finishMarquee(gesture, input)
     }
+    this.#updateHover(input.screen)
     this.#options.onOverlayChange()
     return true
   }
@@ -197,21 +204,20 @@ export class SelectionTool {
     if (!this.#gesture) return false
     this.#gesture = null
     this.#clearPreview()
+    this.#setHoveredHandle(null)
     this.#options.onOverlayChange()
     return true
   }
 
   clearHover(): void {
     this.#setHoveredId(null)
+    this.#setHoveredHandle(null)
   }
 
-  cursorAt(screen: Vec2): string {
+  cursorAt(): string {
     const gesture = this.#gesture
     if (gesture?.kind === 'resize') return handleCursor(gesture.handle)
-    const bounds = this.#selectedRect()
-    if (!bounds) return 'default'
-    const handle = handleAtPoint(this.#screenRect(bounds), screen)
-    return handle ? handleCursor(handle) : 'default'
+    return this.#hoveredHandle ? handleCursor(this.#hoveredHandle) : 'default'
   }
 
   #updateMove(gesture: MoveGesture, world: Vec2, input: { screen: Vec2; shiftKey: boolean }): void {
@@ -298,11 +304,19 @@ export class SelectionTool {
   #updateHover(screen: Vec2): void {
     const hit = hitTest(this.#scene, this.#viewport.screenToWorld(screen))
     this.#setHoveredId(hit ? hit.id : null)
+    const bounds = this.#selectedRect()
+    this.#setHoveredHandle(bounds ? handleAtPoint(this.#screenRect(bounds), screen) : null)
   }
 
   #setHoveredId(id: NodeId | null): void {
     if (this.#hoveredId === id) return
     this.#hoveredId = id
+    this.#options.onOverlayChange()
+  }
+
+  #setHoveredHandle(handle: ResizeHandleId | null): void {
+    if (this.#hoveredHandle === handle) return
+    this.#hoveredHandle = handle
     this.#options.onOverlayChange()
   }
 }
