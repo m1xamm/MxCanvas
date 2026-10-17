@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks'
+import { useRef, useState } from 'preact/hooks'
 import type { ToolId } from '../interaction/tools'
 import { LeftPanel } from '../ui/LeftPanel'
 import { RightPanel } from '../ui/RightPanel'
@@ -11,18 +11,24 @@ import { useStoreValue } from './use-store-value'
 export function App() {
   const { tool, zoom } = useStoreValue(appStore)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const menuButtonRef = useRef<HTMLButtonElement | null>(null)
 
   const handleSelectTool = (nextTool: ToolId) => {
     setTool(nextTool)
   }
 
+  const closeSettings = () => {
+    setSettingsOpen(false)
+    menuButtonRef.current?.focus()
+  }
+
   return (
     <div class="app-shell">
-      <LeftPanel onOpenSettings={() => setSettingsOpen(true)} />
+      <LeftPanel onOpenSettings={() => setSettingsOpen(true)} menuButtonRef={menuButtonRef} />
       <CanvasStage tool={tool} inputBlocked={settingsOpen} />
       <RightPanel zoom={zoom} />
       <Toolbar activeTool={tool} onSelectTool={handleSelectTool} />
-      {settingsOpen && <SettingsDialog onClose={() => setSettingsOpen(false)} />}
+      {settingsOpen && <SettingsDialog onClose={closeSettings} />}
     </div>
   )
 }

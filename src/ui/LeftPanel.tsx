@@ -1,4 +1,5 @@
 import { useState } from 'preact/hooks'
+import type { RefObject } from 'preact'
 import { useTranslation } from '../i18n/use-i18n'
 import { Cluster } from './Cluster'
 import { MainMenu } from './MainMenu'
@@ -18,16 +19,17 @@ const TAB_EMPTY_KEYS: Record<PanelTab, 'noLayers' | 'noAssets'> = {
 
 export interface LeftPanelProps {
   onOpenSettings: () => void
+  menuButtonRef?: RefObject<HTMLButtonElement | null>
 }
 
-export function LeftPanel({ onOpenSettings }: LeftPanelProps) {
+export function LeftPanel({ onOpenSettings, menuButtonRef }: LeftPanelProps) {
   const t = useTranslation()
   const [activeTab, setActiveTab] = useState<PanelTab>('layers')
 
   return (
     <Cluster direction="vertical" class="side-panel side-panel--left">
       <div class="block block--tight">
-        <MainMenu onOpenSettings={onOpenSettings} />
+        <MainMenu onOpenSettings={onOpenSettings} buttonRef={menuButtonRef} />
       </div>
       <div class="block block--tight">
         <Cluster class="segmented-control" role="group" ariaLabel={t('panelsLabel')}>

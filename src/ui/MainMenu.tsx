@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
+import type { RefObject } from 'preact'
 import { useTranslation } from '../i18n/use-i18n'
 import { Cluster } from './Cluster'
 import { AppIcon } from './icons'
@@ -7,9 +8,10 @@ const ESCAPE_KEY_CODE = 'Escape'
 
 export interface MainMenuProps {
   onOpenSettings: () => void
+  buttonRef?: RefObject<HTMLButtonElement | null>
 }
 
-export function MainMenu({ onOpenSettings }: MainMenuProps) {
+export function MainMenu({ onOpenSettings, buttonRef }: MainMenuProps) {
   const t = useTranslation()
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement | null>(null)
@@ -38,6 +40,7 @@ export function MainMenu({ onOpenSettings }: MainMenuProps) {
         aria-label={t('mainMenuLabel')}
         aria-haspopup="menu"
         aria-expanded={open}
+        ref={buttonRef}
         onClick={() => setOpen((value) => !value)}
       >
         <AppIcon />
