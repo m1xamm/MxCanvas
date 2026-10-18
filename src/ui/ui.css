@@ -25,6 +25,7 @@
   z-index: 20;
   width: var(--panel-width);
   padding: var(--gap-screen);
+  overflow: hidden;
   background: var(--color-surface-dim);
 }
 
@@ -48,6 +49,9 @@
 }
 
 .block--stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
 }
 
@@ -66,8 +70,11 @@
 
 .panel-row {
   padding: var(--space-2) var(--space-3);
+  overflow: hidden;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-sm);
+  white-space: nowrap;
+  text-overflow: ellipsis;
   background: var(--color-surface-container);
   color: var(--color-on-surface);
 }
@@ -78,19 +85,31 @@
 }
 
 .control {
+  position: relative;
   border: none;
   background: transparent;
   color: var(--color-on-surface);
   cursor: pointer;
   user-select: none;
-  transition:
-    background var(--motion-medium) var(--motion-easing),
-    color var(--motion-medium) var(--motion-easing),
-    border-radius var(--motion-medium) var(--motion-easing);
 }
 
-.control:hover:not(:disabled):not(.is-active) {
-  background: var(--color-surface-container-high);
+.control::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-on-surface);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-fast) var(--motion-easing);
+}
+
+.control:hover:not(:disabled)::after {
+  opacity: var(--state-hover);
+}
+
+.control:active:not(:disabled)::after {
+  opacity: var(--state-pressed);
 }
 
 .control.is-active {
@@ -99,36 +118,33 @@
 }
 
 .control:disabled {
-  opacity: 0.4;
+  opacity: 0.38;
   cursor: default;
-}
-
-.control:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: -2px;
 }
 
 .segmented-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--space-1) var(--space-2);
+  height: 24px;
+  padding: 0 var(--space-2);
   font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-on-surface-variant);
+}
+
+.segmented-button.is-active {
+  color: var(--color-on-primary-container);
 }
 
 .segmented-button--stretch {
   flex: 1;
 }
 
-.segmented-button:hover:not(.is-active) {
-  color: var(--color-on-surface);
-}
-
 .page-name {
-  font-size: var(--font-size-md);
-  line-height: var(--line-height-md);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
   color: var(--color-on-surface);
 }
 
@@ -141,8 +157,8 @@
 
 .panel-text {
   margin: 0;
-  font-size: var(--font-size-sm);
-  line-height: var(--line-height-sm);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
   color: var(--color-on-surface-subtle);
 }
 
@@ -156,27 +172,24 @@
   justify-content: space-between;
   gap: var(--space-2);
   width: 100%;
-  padding: var(--space-2) var(--space-3);
+  height: 32px;
+  padding: 0 var(--space-3);
   border-radius: calc(var(--radius-outer) - var(--space-1));
-}
-
-.zoom-menu__popup {
-  min-width: 200px;
+  color: var(--color-on-surface-variant);
 }
 
 .zoom-readout {
   font-size: var(--font-size-sm);
   line-height: var(--line-height-sm);
   font-variant-numeric: tabular-nums;
-  color: var(--color-on-surface-variant);
 }
 
 .toolbar {
   position: absolute;
   left: 50%;
   bottom: var(--gap-screen);
-  transform: translateX(-50%);
   z-index: 10;
+  transform: translateX(-50%);
 }
 
 .tool-group {
@@ -198,19 +211,19 @@
 
 .tool-group__chevron {
   position: absolute;
-  right: 2px;
-  bottom: 2px;
+  right: var(--space-1);
+  bottom: var(--space-1);
   display: grid;
   place-items: center;
   width: 12px;
   height: 12px;
   border-radius: var(--radius-pill);
+  background: var(--color-surface);
   color: inherit;
   opacity: 0.7;
 }
 
 .tool-group__chevron:hover {
-  background: color-mix(in srgb, currentColor 15%, transparent);
   opacity: 1;
 }
 
@@ -223,48 +236,63 @@
   place-items: center;
   width: var(--toolbar-button-size);
   height: var(--toolbar-button-size);
+  border-radius: calc(var(--radius-outer) - var(--space-1));
   background: var(--color-surface);
 }
 
-.menu-popup {
-  position: absolute;
-  top: calc(100% + var(--gap-cluster));
-  left: 0;
+.popup {
+  position: fixed;
   z-index: 40;
-  min-width: 180px;
-  padding: var(--space-1);
-  border-radius: var(--radius-outer);
-  background: var(--color-surface-container);
-  box-shadow: var(--shadow-overlay);
+  opacity: 0;
+  transform: scale(0.96);
+  transition:
+    opacity var(--motion-fast) var(--motion-easing),
+    transform var(--motion-fast) var(--motion-easing);
 }
 
-.menu-popup--above {
-  top: auto;
-  bottom: calc(100% + var(--gap-cluster));
-}
-
-.menu-popup--right {
-  left: auto;
-  right: 0;
+.popup.is-open {
+  opacity: 1;
+  transform: none;
 }
 
 .menu-item {
-  display: block;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
   width: 100%;
-  padding: var(--space-2) var(--space-3);
+  min-width: 200px;
+  height: 36px;
+  padding: 0 var(--space-3);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-sm);
   text-align: left;
+  background: var(--color-surface-container);
+  color: var(--color-on-surface);
 }
 
-.menu-item--tool {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
+.menu-item--plain {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.menu-item__icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: var(--color-on-surface-variant);
+}
+
+.menu-item__label {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .menu-item__hotkey {
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+  font-variant-numeric: tabular-nums;
   color: var(--color-on-surface-subtle);
 }
 
@@ -282,7 +310,6 @@
   padding: var(--space-1);
   border-radius: var(--radius-outer);
   background: var(--color-surface);
-  box-shadow: var(--shadow-overlay);
 }
 
 .dialog-row {
@@ -295,8 +322,8 @@
 
 .dialog-title {
   flex: 1;
-  font-size: var(--font-size-md);
-  line-height: var(--line-height-md);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
   font-weight: var(--font-weight-medium);
   color: var(--color-on-surface);
 }

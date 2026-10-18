@@ -17,12 +17,68 @@ body {
   background: var(--color-canvas);
   color: var(--color-on-surface);
   font-family: var(--font-family);
-  font-size: var(--font-size-md);
-  line-height: var(--line-height-md);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
   -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+
+input,
+textarea,
+select,
+[contenteditable='true'] {
+  user-select: text;
+}
+
+img,
+svg {
+  -webkit-user-drag: none;
 }
 
 button {
   font: inherit;
   color: inherit;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: var(--focus-ring-offset);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-scrollbar-thumb) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track,
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: var(--radius-pill);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
 }
