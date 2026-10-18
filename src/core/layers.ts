@@ -5,6 +5,24 @@ export const LAYER_ROW_HEIGHT = 32
 export const LAYER_ROW_GAP = 2
 export const LAYER_ROW_PITCH = LAYER_ROW_HEIGHT + LAYER_ROW_GAP
 export const LAYER_OVERSCAN = 4
+export const LAYER_ROW_OUTER_RADIUS = 22
+export const LAYER_ROW_SEAM_RADIUS = 4
+
+export interface LayerRowCorners {
+  top: number
+  bottom: number
+}
+
+export function layerRowCorners(index: number, rowCount: number): LayerRowCorners {
+  if (rowCount <= 1) {
+    return { top: LAYER_ROW_OUTER_RADIUS, bottom: LAYER_ROW_OUTER_RADIUS }
+  }
+  if (index === 0) return { top: LAYER_ROW_OUTER_RADIUS, bottom: LAYER_ROW_SEAM_RADIUS }
+  if (index === rowCount - 1) {
+    return { top: LAYER_ROW_SEAM_RADIUS, bottom: LAYER_ROW_OUTER_RADIUS }
+  }
+  return { top: LAYER_ROW_SEAM_RADIUS, bottom: LAYER_ROW_SEAM_RADIUS }
+}
 
 export type LayerOrderMode = 'forward' | 'backward' | 'front' | 'back'
 

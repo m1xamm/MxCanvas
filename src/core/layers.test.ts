@@ -4,9 +4,12 @@ import {
   dropBoundary,
   LAYER_OVERSCAN,
   LAYER_ROW_HEIGHT,
+  LAYER_ROW_OUTER_RADIUS,
   LAYER_ROW_PITCH,
+  LAYER_ROW_SEAM_RADIUS,
   layerClick,
   layerListHeight,
+  layerRowCorners,
   planLayerReorder,
   revealRow,
   reorderIds,
@@ -234,5 +237,54 @@ describe('siblingGroups', () => {
   it('skips unknown nodes', () => {
     const scene = documentWith('a')
     expect(siblingGroups(scene, ['missing'])).toEqual([])
+  })
+})
+
+describe('layerRowCorners', () => {
+  it('rounds both corners of a single row', () => {
+    expect(layerRowCorners(0, 1)).toEqual({
+      top: LAYER_ROW_OUTER_RADIUS,
+      bottom: LAYER_ROW_OUTER_RADIUS,
+    })
+  })
+
+  it('rounds only the outer corners of the first and last rows', () => {
+    expect(layerRowCorners(0, 5)).toEqual({
+      top: LAYER_ROW_OUTER_RADIUS,
+      bottom: LAYER_ROW_SEAM_RADIUS,
+    })
+    expect(layerRowCorners(4, 5)).toEqual({
+      top: LAYER_ROW_SEAM_RADIUS,
+      bottom: LAYER_ROW_OUTER_RADIUS,
+    })
+  })
+
+  it('seams the middle rows', () => {
+    expect(layerRowCorners(2, 5)).toEqual({
+      top: LAYER_ROW_SEAM_RADIUS,
+      bottom: LAYER_ROW_SEAM_RADIUS,
+    })
+  })
+
+  it('uses index based corners outside the rendered window', () => {
+    expect(layerRowCorners(0, 400)).toEqual({
+      top: LAYER_ROW_OUTER_RADIUS,
+      bottom: LAYER_ROW_SEAM_RADIUS,
+    })
+    expect(layerRowCorners(120, 400)).toEqual({
+      top: LAYER_ROW_SEAM_RADIUS,
+      bottom: LAYER_ROW_SEAM_RADIUS,
+    })
+    expect(layerRowCorners(399, 400)).toEqual({
+      top: LAYER_ROW_SEAM_RADIUS,
+      bottom: LAYER_ROW_OUTER_RADIUS,
+    })
+  })
+
+  it('handles an empty list', () => {
+    expect(layerRowCorners(0, 0)).toEqual({
+      top: LAYER_ROW_OUTER_RADIUS,
+      bottom: LAYER_ROW_OUTER_RADIUS,
+    })
   })
 })

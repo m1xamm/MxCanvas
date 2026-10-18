@@ -92,7 +92,7 @@ export function LayersPanel() {
   }
 
   return (
-    <div class="block block--section block--fill">
+    <div class="block block--section block--fill block--bare">
       <span class="section-title">{t('layers')}</span>
       {rowCount === 0 ? (
         <p class="panel-text">{t('noLayers')}</p>
@@ -115,6 +115,7 @@ export function LayersPanel() {
                   key={id}
                   node={node}
                   index={rows.start + offset}
+                  rowCount={rowCount}
                   order={order}
                   selected={selection.includes(id)}
                   renaming={renamingId === id}

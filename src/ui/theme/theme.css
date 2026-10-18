@@ -1,18 +1,20 @@
 :root {
   color-scheme: dark;
 
-  --color-canvas: #1e1e1e;
-  --color-canvas-grid-dot: #333333;
-  --color-surface-dim: #242424;
-  --color-surface: #2c2c2c;
-  --color-surface-container: #333333;
-  --color-surface-container-high: #3c3c3c;
+  --color-canvas: #141414;
+  --color-canvas-grid-dot: #3f3f3f;
+  --color-canvas-pixel-grid: #2b2b2b;
+  --color-sidebar: #1e1e1e;
+  --color-block: #262626;
+  --color-block-hover: #303030;
+  --color-block-selected: #004a77;
+  --color-popup: #2e2e2e;
+  --color-raised: #383838;
   --color-on-surface: #ffffff;
   --color-on-surface-variant: #b3b3b3;
   --color-on-surface-subtle: #8c8c8c;
   --color-primary: #0d99ff;
   --color-on-primary: #ffffff;
-  --color-primary-container: #004a77;
   --color-on-primary-container: #c2e7ff;
   --color-scrim: rgba(0, 0, 0, 0.55);
   --color-scrollbar-thumb: #4a4a4a;
@@ -48,7 +50,6 @@
   --panel-width: 240px;
   --toolbar-button-size: 40px;
 
-  --radius-row: 12px;
   --switch-width: 40px;
   --switch-height: 22px;
   --switch-thumb-size: 16px;

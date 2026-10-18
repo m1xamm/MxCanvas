@@ -26,7 +26,7 @@
   width: var(--panel-width);
   padding: var(--gap-screen);
   overflow: hidden;
-  background: var(--color-surface-dim);
+  background: var(--color-sidebar);
 }
 
 .side-panel--left {
@@ -41,7 +41,7 @@
 
 .block {
   min-width: 0;
-  background: var(--color-surface);
+  background: var(--color-block);
 }
 
 .block--tight {
@@ -75,12 +75,12 @@
   line-height: var(--line-height-sm);
   white-space: nowrap;
   text-overflow: ellipsis;
-  background: var(--color-surface-container);
+  background: var(--color-block);
   color: var(--color-on-surface);
 }
 
 .panel-row.is-active {
-  background: var(--color-primary-container);
+  background: var(--color-block-selected);
   color: var(--color-on-primary-container);
 }
 
@@ -113,7 +113,7 @@
 }
 
 .control.is-active {
-  background: var(--color-primary-container);
+  background: var(--color-block-selected);
   color: var(--color-on-primary-container);
 }
 
@@ -194,11 +194,11 @@
 
 .tool-group {
   position: relative;
-  background: var(--color-surface);
+  background: var(--color-block);
 }
 
 .tool-group.is-active {
-  background: var(--color-primary-container);
+  background: var(--color-block-selected);
   color: var(--color-on-primary-container);
 }
 
@@ -220,7 +220,7 @@
   width: 12px;
   height: 12px;
   border-radius: var(--radius-pill);
-  background: var(--color-surface);
+  background: var(--color-block);
   color: inherit;
   opacity: 0.7;
 }
@@ -239,12 +239,15 @@
   width: var(--toolbar-button-size);
   height: var(--toolbar-button-size);
   border-radius: calc(var(--radius-outer) - var(--space-1));
-  background: var(--color-surface);
+  background: var(--color-block);
 }
 
 .popup {
   position: fixed;
   z-index: 40;
+  padding: var(--space-1);
+  border-radius: var(--radius-outer);
+  background: var(--color-popup);
   opacity: 0;
   transform: scale(0.96);
   transition:
@@ -269,7 +272,7 @@
   font-size: var(--font-size-sm);
   line-height: var(--line-height-sm);
   text-align: left;
-  background: var(--color-surface-container);
+  background: var(--color-block);
   color: var(--color-on-surface);
 }
 
@@ -307,11 +310,15 @@
   background: var(--color-scrim);
 }
 
+.block--bare {
+  background: none;
+}
+
 .dialog-card {
   width: 320px;
   padding: var(--space-1);
   border-radius: var(--radius-outer);
-  background: var(--color-surface);
+  background: var(--color-popup);
 }
 
 .dialog-row {
@@ -319,7 +326,7 @@
   align-items: center;
   gap: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  background: var(--color-surface-container);
+  background: var(--color-block);
 }
 
 .dialog-title {
@@ -352,7 +359,7 @@
   width: var(--switch-width);
   height: var(--switch-height);
   border-radius: var(--radius-pill);
-  background: var(--color-surface-container-high);
+  background: var(--color-raised);
   transition: background var(--motion-fast) var(--motion-easing);
 }
 
@@ -399,15 +406,17 @@
   gap: var(--space-2);
   height: 32px;
   padding: 0 var(--space-1) 0 var(--space-2);
-  border-radius: var(--radius-row);
-  background: var(--color-surface-container);
+  border-radius: var(--layer-row-radius, var(--radius-seam));
+  background: var(--color-block);
   color: var(--color-on-surface);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-sm);
+  transition: border-radius var(--motion-medium) var(--motion-easing);
 }
 
 .layer-row.is-selected {
-  background: var(--color-primary-container);
+  border-radius: var(--radius-pill);
+  background: var(--color-block-selected);
   color: var(--color-on-primary-container);
 }
 
@@ -436,7 +445,7 @@
   border: none;
   border-radius: var(--radius-seam);
   outline-offset: 1px;
-  background: var(--color-surface-dim);
+  background: var(--color-sidebar);
   color: var(--color-on-surface);
   font: inherit;
 }

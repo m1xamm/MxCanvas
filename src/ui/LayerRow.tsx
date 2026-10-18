@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'preact/hooks'
 import type { TargetedKeyboardEvent, TargetedPointerEvent } from 'preact'
 import type { NodeId, SceneNodeUnion } from '../core/document/types'
-import { rowOffset } from '../core/layers'
+import { layerRowCorners, rowOffset } from '../core/layers'
 import { useTranslation } from '../i18n/use-i18n'
 import { selectLayer, setHoveredLayer } from '../interaction/layer-list'
 import { LAYER_TYPE_ICONS, LockIcon, UnlockIcon, VisibilityIcon, VisibilityOffIcon } from './layer-icons'
@@ -21,6 +21,7 @@ interface PressState {
 export interface LayerRowProps {
   node: SceneNodeUnion
   index: number
+  rowCount: number
   order: readonly NodeId[]
   selected: boolean
   renaming: boolean
@@ -35,7 +36,7 @@ export interface LayerRowProps {
 }
 
 export function LayerRow(props: LayerRowProps) {
-  const { node, index, order, selected, renaming } = props
+  const { node, index, rowCount, order, selected, renaming } = props
   const t = useTranslation()
   const rowRef = useRef<HTMLDivElement | null>(null)
   const inputRef = useRef<HTMLInputElement | null>(null)
@@ -91,6 +92,7 @@ export function LayerRow(props: LayerRowProps) {
   }
 
   const className = selected ? 'layer-row is-selected' : 'layer-row'
+  const corners = layerRowCorners(index, rowCount)
   const visibilityClass = node.visible ? 'control layer-row__action' : 'control layer-row__action is-on'
   const lockClass = node.locked ? 'control layer-row__action is-on' : 'control layer-row__action'
 
@@ -98,7 +100,10 @@ export function LayerRow(props: LayerRowProps) {
     <div
       ref={rowRef}
       class={className}
-      style={{ top: `${rowOffset(index)}px` }}
+      style={{
+        top: `${rowOffset(index)}px`,
+        '--layer-row-radius': `${corners.top}px ${corners.top}px ${corners.bottom}px ${corners.bottom}px`,
+      }}
       role="option"
       aria-selected={selected}
       tabindex={0}
