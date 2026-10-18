@@ -1,5 +1,5 @@
 import type { Vec2 } from '../core/math/matrix'
-import { normalizeRect, type Rect } from '../core/math/rect'
+import type { Rect } from '../core/math/rect'
 
 export type ResizeHandleId = 'nw' | 'n' | 'ne' | 'e' | 'se' | 's' | 'sw' | 'w'
 
@@ -90,17 +90,6 @@ export function resizeBounds(input: ResizeBoundsInput): Rect {
     width: bounds.width * scaleX,
     height: bounds.height * scaleY,
   }
-}
-
-export function mapRectWithBounds(rect: Rect, from: Rect, to: Rect): Rect {
-  const scaleX = from.width === 0 ? 1 : to.width / from.width
-  const scaleY = from.height === 0 ? 1 : to.height / from.height
-  return normalizeRect({
-    x: to.x + (rect.x - from.x) * scaleX,
-    y: to.y + (rect.y - from.y) * scaleY,
-    width: rect.width * scaleX,
-    height: rect.height * scaleY,
-  })
 }
 
 function axisScale(

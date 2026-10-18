@@ -1,18 +1,12 @@
 import type { NodeId, SceneReader } from '../core/document/types'
 import type { NodeBoxChange } from '../core/commands/node-box-change'
 import type { Vec2 } from '../core/math/matrix'
-import { boundsOfRects, normalizeRect, translateRect, transformRect, type Rect } from '../core/math/rect'
+import { boundsOfRects, mapRectWithBounds, normalizeRect, translateRect, transformRect, type Rect } from '../core/math/rect'
 import { nodeBox, nodeWorldRect, worldRectToBox, type NodeBox } from '../core/transform'
 import type { Viewport } from '../core/viewport'
 import { isDrag, moveDelta } from './gesture'
 import { collectNodesInRect, hitTest } from './hit-testing'
-import {
-  handleAtPoint,
-  handleCursor,
-  mapRectWithBounds,
-  resizeBounds,
-  type ResizeHandleId,
-} from './resize'
+import { handleAtPoint, handleCursor, resizeBounds, type ResizeHandleId } from './resize'
 import { selectionOnPress, toggleSelection, unionSelection } from './selection'
 
 export interface SelectionPointerInput {
@@ -231,14 +225,23 @@ export class SelectionTool {
     this.#options.onOverlayChange()
   }
 
-  #updateResize(gesture: ResizeGesture, world: Vec2, input: SelectionPointerInput): void {
-    if (!gesture.moved && !isDrag(gesture.startScreen, input.screen)) return
+  #constrainProportions(): boolean {
+    const ids = this.#options.getSelection()
+    if (ids.length === 0) return false
+    for (const id of ids) {
+      const node = this.#scene.getNode(id)
+      if (!node || !node.constrainProportions) return false
+    }
+    return true
+  }
+
+  #updateResize(gesture: ResizeGesture, world: Vec2, input: SelectionPointerInput): void {    if (!gesture.moved && !isDrag(gesture.startScreen, input.screen)) return
     gesture.moved = true
     gesture.rawBounds = resizeBounds({
       bounds: gesture.startBounds,
       handle: gesture.handle,
       pointer: world,
-      proportional: input.shiftKey,
+      proportional: input.shiftKey || this.#constrainProportions(),
       fromCenter: input.altKey,
     })
     this.#previews = resizedBoxesFor(

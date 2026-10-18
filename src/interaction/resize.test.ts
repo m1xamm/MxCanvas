@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  handleAtPoint,
-  handleCursor,
-  handlePoint,
-  mapRectWithBounds,
-  resizeBounds,
-  type ResizeHandleId,
-} from './resize'
+import { mapRectWithBounds } from '../core/math/rect'
+import { handleAtPoint, handleCursor, handlePoint, resizeBounds, type ResizeHandleId } from './resize'
 
 const BOUNDS = { x: 0, y: 0, width: 100, height: 100 }
 

@@ -55,3 +55,14 @@ export function transformRect(matrix: Mat2D, rect: Rect): Rect {
   const maxY = Math.max(y1, y2, y3, y4)
   return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
 }
+
+export function mapRectWithBounds(rect: Rect, from: Rect, to: Rect): Rect {
+  const scaleX = from.width === 0 ? 1 : to.width / from.width
+  const scaleY = from.height === 0 ? 1 : to.height / from.height
+  return normalizeRect({
+    x: to.x + (rect.x - from.x) * scaleX,
+    y: to.y + (rect.y - from.y) * scaleY,
+    width: rect.width * scaleX,
+    height: rect.height * scaleY,
+  })
+}
