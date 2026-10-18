@@ -1,6 +1,7 @@
 import type { MessageKey } from '../i18n/i18n'
 import { useTranslation } from '../i18n/use-i18n'
 import { Cluster } from './Cluster'
+import { PropertiesPanel } from './properties/PropertiesPanel'
 import { ZoomMenu } from './ZoomMenu'
 
 export interface RightPanelProps {
@@ -8,10 +9,7 @@ export interface RightPanelProps {
 }
 
 const SECTION_KEYS: readonly MessageKey[] = [
-  'sections.position',
   'sections.layout',
-  'sections.appearance',
-  'sections.fill',
   'sections.stroke',
   'sections.effects',
   'sections.export',
@@ -36,6 +34,7 @@ export function RightPanel({ zoom }: RightPanelProps) {
           </button>
         </Cluster>
       </div>
+      <PropertiesPanel />
       {SECTION_KEYS.map((key) => (
         <div key={key} class="block block--stack">
           <span class="section-title">{t(key)}</span>

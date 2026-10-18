@@ -37,6 +37,10 @@ const LAYER_DRAG_DISTANCE = 70
 const ACTION_VISIBILITY_INDEX = 0
 const ACTION_LOCK_INDEX = 1
 
+const FILL_HEX_INDEX = 0
+const FILL_OPACITY_INDEX = 1
+const MIXED_OPACITY_PERCENT = '40'
+
 async function withPage(viewport, run) {
   const server = await createServer({ server: { port: 5199, strictPort: true } })
   await server.listen()
@@ -223,6 +227,39 @@ async function clearOutputDir() {
   await Promise.all(entries.map((entry) => rm(`${OUTPUT_DIR}${entry}`, { force: true })))
 }
 
+async function runPropertiesShots(page) {
+  await capture(page, 'properties-single')
+
+  await page.locator('.fill-swatch').first().click()
+  await page.locator('.color-picker').waitFor()
+  await capture(page, 'color-picker-open')
+  await page.locator('.color-picker__square').click({ position: { x: 30, y: 30 } })
+  await parkPointer(page)
+  await capture(page, 'color-picker-live')
+  await page.mouse.click(GRID_CENTER.x, GRID_CENTER.y)
+}
+
+async function runMixedPropertiesShots(page) {
+  await capture(page, 'properties-multi')
+
+  await layerRow(page, LAYER_SINGLE_ROW).click()
+  const opacityField = page.locator('.fill-row .field__input').nth(FILL_OPACITY_INDEX)
+  await opacityField.click()
+  await opacityField.fill(MIXED_OPACITY_PERCENT)
+  await page.keyboard.press('Enter')
+  await layerRow(page, LAYER_MULTI_ROW).click({ modifiers: ['Shift'] })
+  await parkPointer(page)
+  await capture(page, 'properties-mixed')
+
+  const hexField = page.locator('.fill-row .field__input').nth(FILL_HEX_INDEX)
+  await layerRow(page, LAYER_SINGLE_ROW).click()
+  await hexField.click()
+  await hexField.fill('FF5722')
+  await hexField.press('Enter')
+  await parkPointer(page)
+  await capture(page, 'properties-hex')
+}
+
 async function runShots(page) {
   await capture(page, 'initial')
   await capture(page, 'grid-default')
@@ -245,6 +282,8 @@ async function runShots(page) {
   await capture(page, 'handle-hovered')
   await parkPointer(page)
 
+  await runPropertiesShots(page)
+
   await runMenuShots(page)
 
   await page.keyboard.press('KeyV')
@@ -254,6 +293,7 @@ async function runShots(page) {
   await parkPointer(page)
 
   await runLayersShots(page)
+  await runMixedPropertiesShots(page)
 }
 
 await clearOutputDir()

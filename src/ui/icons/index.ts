@@ -29,6 +29,8 @@ export type IconName =
   | 'link'
   | 'linkOff'
   | 'check'
+  | 'cornerRadius'
+  | 'opacity'
 
 interface IconFiles {
   outlined: string
@@ -63,6 +65,8 @@ const ICON_FILES: Record<IconName, IconFiles> = {
   link: { outlined: 'link', filled: 'link-fill' },
   linkOff: { outlined: 'link_off', filled: 'link_off-fill' },
   check: { outlined: 'check', filled: 'check-fill' },
+  cornerRadius: { outlined: 'rounded_corner', filled: 'rounded_corner-fill' },
+  opacity: { outlined: 'opacity', filled: 'opacity-fill' },
 }
 
 export const TOOL_ICON_NAMES: Record<ToolId, IconName> = {
