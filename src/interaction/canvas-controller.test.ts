@@ -155,6 +155,7 @@ function setup(
   const onRedo = vi.fn<() => void>()
   const onToggleSelectionVisible = vi.fn<() => void>()
   const onToggleSelectionLocked = vi.fn<() => void>()
+  const onTogglePixelGrid = vi.fn<() => void>()
   const onReorderSelection = vi.fn<(mode: LayerOrderMode) => void>()
   let selection: readonly NodeId[] = []
   const onSelectionChange = vi.fn<(ids: readonly NodeId[]) => void>((ids) => {
@@ -177,6 +178,7 @@ function setup(
     onRedo,
     onToggleSelectionVisible,
     onToggleSelectionLocked,
+    onTogglePixelGrid,
     onReorderSelection,
     getViewportArea: options.getViewportArea,
   })
@@ -198,6 +200,7 @@ function setup(
     onRedo,
     onToggleSelectionVisible,
     onToggleSelectionLocked,
+    onTogglePixelGrid,
     onReorderSelection,
     getSelection: () => selection,
     controller,
@@ -466,6 +469,15 @@ describe('CanvasController', () => {
     expect(onToggleSelectionLocked).toHaveBeenCalledTimes(1)
     fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyH', ctrlKey: true }))
     expect(onToggleSelectionVisible).toHaveBeenCalledTimes(1)
+    controller.dispose()
+  })
+
+  it('toggles the pixel grid on ctrl+quote', () => {
+    const { fakeWindow, onTogglePixelGrid, controller } = setup()
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'Quote', ctrlKey: true }))
+    expect(onTogglePixelGrid).toHaveBeenCalledTimes(1)
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'Quote' }))
+    expect(onTogglePixelGrid).toHaveBeenCalledTimes(1)
     controller.dispose()
   })
 

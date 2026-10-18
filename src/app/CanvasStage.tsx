@@ -20,7 +20,7 @@ import {
   toggleSelectionLocked,
   toggleSelectionVisible,
 } from './editor'
-import { isCanvasGridVisible, subscribeCanvasGrid } from './settings'
+import { isCanvasGridVisible, isPixelGridVisible, subscribeCanvasGrid, subscribePixelGrid, togglePixelGridVisible } from './settings'
 import { observeDevicePixelRatio } from './observe-device-pixel-ratio'
 import { readViewportArea } from './viewport-area'
 import { setViewportActions } from './viewport-actions'
@@ -60,6 +60,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       getSelectionBounds: () => controller?.selectionBounds ?? null,
       getDraft: () => controller?.draft ?? null,
       isGridVisible: isCanvasGridVisible,
+      isPixelGridVisible,
     })
     const createdController = new CanvasController(canvas, viewport, {
       initialTool: tool,
@@ -83,6 +84,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       onRedo: () => history.redo(),
       onToggleSelectionVisible: toggleSelectionVisible,
       onToggleSelectionLocked: toggleSelectionLocked,
+      onTogglePixelGrid: togglePixelGridVisible,
       onReorderSelection: reorderSelection,
       getViewportArea: () => readViewportArea(canvas.clientWidth, canvas.clientHeight),
       isInputBlocked: () => blockedRef.current,
@@ -110,6 +112,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
     const unsubscribeScene = scene.subscribe(() => renderer.requestRender())
     const unsubscribeSelection = selectionStore.subscribe(() => renderer.requestRender())
     const unsubscribeCanvasGrid = subscribeCanvasGrid(() => renderer.requestRender())
+    const unsubscribePixelGrid = subscribePixelGrid(() => renderer.requestRender())
     const unsubscribeLayerHover = hoveredLayerStore.subscribe(() => renderer.requestRender())
     const clearLayerHover = () => setHoveredLayer(null)
     canvas.addEventListener('pointermove', clearLayerHover)
@@ -129,6 +132,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       unsubscribeScene()
       unsubscribeSelection()
       unsubscribeCanvasGrid()
+      unsubscribePixelGrid()
       setViewportActions(null)
       createdController.dispose()
       renderer.dispose()

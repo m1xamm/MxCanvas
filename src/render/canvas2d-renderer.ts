@@ -1,6 +1,7 @@
 import { DEFAULT_RECTANGLE_FILL } from '../core/document/create-node'
 import type { NodeId, SceneNodeUnion, SceneReader, SolidPaint } from '../core/document/types'
 import { canvasGrid } from '../core/canvas-grid'
+import { pixelGrid } from '../core/pixel-grid'
 import { applyToPoint, multiply, scaling, type Mat2D } from '../core/math/matrix'
 import { transformRect, type Rect } from '../core/math/rect'
 import { boxWorldTransform, type NodeBox } from '../core/transform'
@@ -29,6 +30,7 @@ export interface Canvas2DRendererOptions {
   getSelectionBounds?: () => Rect | null
   getDraft?: () => Rect | null
   isGridVisible?: () => boolean
+  isPixelGridVisible?: () => boolean
 }
 
 export class Canvas2DRenderer implements Renderer {
@@ -44,6 +46,7 @@ export class Canvas2DRenderer implements Renderer {
   #getSelectionBounds: () => Rect | null
   #getDraft: () => Rect | null
   #isGridVisible: () => boolean
+  #isPixelGridVisible: () => boolean
   #colors: ThemeColors
   #devicePixelRatio = 1
   #cssWidth = 1
@@ -70,6 +73,7 @@ export class Canvas2DRenderer implements Renderer {
     this.#getSelectionBounds = options.getSelectionBounds ?? (() => null)
     this.#getDraft = options.getDraft ?? (() => null)
     this.#isGridVisible = options.isGridVisible ?? (() => false)
+    this.#isPixelGridVisible = options.isPixelGridVisible ?? (() => false)
     this.#colors = readThemeColors()
   }
 
@@ -107,6 +111,7 @@ export class Canvas2DRenderer implements Renderer {
       this.#viewport.matrix(),
     )
     this.#drawGrid(deviceViewport)
+    this.#drawPixelGrid(deviceViewport)
     for (const node of collectVisibleNodes(this.#scene, this.#viewportWorldBounds(), this.#visibleNodes)) {
       this.#drawNode(node, deviceViewport)
     }
@@ -153,6 +158,26 @@ export class Canvas2DRenderer implements Renderer {
       for (let column = 0; column < grid.columns; column += 1) {
         context.rect(Math.round(origin.x + column * spacing), y, dotSize, dotSize)
       }
+    }
+    context.fill()
+    context.globalAlpha = 1
+  }
+
+  #drawPixelGrid(deviceViewport: Mat2D): void {
+    if (!this.#isPixelGridVisible()) return
+    const grid = pixelGrid(this.#viewportWorldBounds(), this.#viewport.zoom)
+    if (grid.alpha === 0 || grid.columns === 0 || grid.rows === 0) return
+    const context = this.#context
+    const origin = applyToPoint(deviceViewport, { x: grid.firstX, y: grid.firstY })
+    const spacing = this.#viewport.zoom * this.#devicePixelRatio
+    context.fillStyle = this.#colors.canvasPixelGrid
+    context.globalAlpha = grid.alpha
+    context.beginPath()
+    for (let column = 0; column < grid.columns; column += 1) {
+      context.rect(Math.round(origin.x + column * spacing), 0, 1, this.#canvas.height)
+    }
+    for (let row = 0; row < grid.rows; row += 1) {
+      context.rect(0, Math.round(origin.y + row * spacing), this.#canvas.width, 1)
     }
     context.fill()
     context.globalAlpha = 1

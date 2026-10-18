@@ -25,6 +25,7 @@ const UNDO_KEY_CODE = 'KeyZ'
 const REDO_ALTERNATE_KEY_CODE = 'KeyY'
 const TOGGLE_VISIBLE_KEY_CODE = 'KeyH'
 const TOGGLE_LOCKED_KEY_CODE = 'KeyL'
+const TOGGLE_PIXEL_GRID_KEY_CODE = 'Quote'
 const BRING_FORWARD_KEY_CODE = 'BracketRight'
 const SEND_BACKWARD_KEY_CODE = 'BracketLeft'
 const ZOOM_RESET_TARGET = 1
@@ -62,6 +63,7 @@ export interface CanvasControllerOptions {
   onRedo: () => void
   onToggleSelectionVisible: () => void
   onToggleSelectionLocked: () => void
+  onTogglePixelGrid: () => void
   onReorderSelection: (mode: LayerOrderMode) => void
   getViewportArea?: () => Rect
   isInputBlocked?: () => boolean
@@ -374,6 +376,11 @@ export class CanvasController {
       if (!event.shiftKey) return
       event.preventDefault()
       this.#options.onToggleSelectionLocked()
+      return
+    }
+    if (event.code === TOGGLE_PIXEL_GRID_KEY_CODE) {
+      event.preventDefault()
+      this.#options.onTogglePixelGrid()
       return
     }
     if (event.code === BRING_FORWARD_KEY_CODE) {

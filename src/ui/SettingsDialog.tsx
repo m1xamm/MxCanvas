@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'preact/hooks'
-import { canvasGridStore, setCanvasGridVisible } from '../app/settings'
+import { canvasGridStore, pixelGridStore, setCanvasGridVisible, setPixelGridVisible } from '../app/settings'
 import { useStoreValue } from '../app/use-store-value'
 import { LANGUAGES, setLanguage } from '../i18n/i18n'
 import { useLanguage, useTranslation } from '../i18n/use-i18n'
@@ -19,6 +19,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const t = useTranslation()
   const language = useLanguage()
   const canvasGridVisible = useStoreValue(canvasGridStore)
+  const pixelGridVisible = useStoreValue(pixelGridStore)
   const cardRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -98,6 +99,14 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
               checked={canvasGridVisible}
               label={t('canvasGridLabel')}
               onChange={setCanvasGridVisible}
+            />
+          </div>
+          <div class="dialog-row">
+            <span class="dialog-label">{t('pixelGridLabel')}</span>
+            <Switch
+              checked={pixelGridVisible}
+              label={t('pixelGridLabel')}
+              onChange={setPixelGridVisible}
             />
           </div>
         </Cluster>

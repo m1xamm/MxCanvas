@@ -59,7 +59,10 @@ async function withPage(viewport, run) {
   }
 }
 
-async function capture(page, name) {
+async function capture(page, name, zoomSteps = 0) {
+  for (let step = 0; step < zoomSteps; step += 1) {
+    await page.keyboard.press('Control+Equal')
+  }
   await page.waitForTimeout(SETTLE_MS)
   await page.screenshot({ path: `${OUTPUT_DIR}${name}.png` })
 }
@@ -227,6 +230,8 @@ async function runShots(page) {
   await zoomWithWheel(page, GRID_ZOOM_WHEEL_DELTA)
   await capture(page, 'grid-zoomed')
   await parkPointer(page)
+  await page.keyboard.press('Shift+Digit0')
+  await capture(page, 'pixel-grid-800', 3)
   await page.keyboard.press('Shift+Digit0')
 
   await runToolbarShots(page)
