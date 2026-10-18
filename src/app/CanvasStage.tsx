@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'preact/hooks'
+import { useEffect, useLayoutEffect, useRef } from 'preact/hooks'
 import { CreateNodeCommand } from '../core/commands/create-node-command'
 import type { NodeId } from '../core/document/types'
 import type { NodeBox } from '../core/transform'
@@ -39,7 +39,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
   const controllerRef = useRef<CanvasController | null>(null)
   const blockedRef = useRef(inputBlocked)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     blockedRef.current = inputBlocked
   }, [inputBlocked])
 
@@ -136,7 +136,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
     }
   }, [])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     controllerRef.current?.setTool(tool)
   }, [tool])
 
