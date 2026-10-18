@@ -242,6 +242,10 @@
   background: var(--color-block);
 }
 
+.menu-button__logo {
+  display: block;
+}
+
 .popup {
   position: fixed;
   z-index: 40;

@@ -76,3 +76,9 @@
 - Fixes found by the screenshots: the layers list is now measured through a callback ref (an empty document renders no list, so the virtual window of a fresh panel stayed at the overscan size); the CanvasStage tool sync moved from a deferred effect to a layout effect, because a stale deferred effect could overwrite a hotkey tool right before the drag.
 - Screenshots: `npm run shots` writes 24 PNGs now (toolbar hover/pressed/focus-visible/active close-ups, the grid at 100% and 125% zoom, layers single and multi selection, hovered row, inline rename, hidden + locked row, drag indicator).
 - Tests: 273 passing (grid math, display order, range selection, reorder and virtualization math, the four new commands with undo/redo, layer click rules, controller hotkeys).
+
+## Stage 6 — Contrast, color ladder, Material icons, pixel grid, properties panel, motion
+
+- Task 0: AGENTS.md now documents Material Symbols Rounded as the only icon source and the logo assets.
+- Task 1: one tonal ladder in theme.css (canvas #141414, sidebar #212121, block #2a2a2a, popup #333333, raised #3d3d3d, primary container as selected); every non-token color outside theme.css is gone; layer rows are the cluster blocks themselves on the sidebar tone with index-based outer/seam corners and pill selection; layerRowCorners is pure math with tests.
+- Task 2: logos moved to src/assets/logo-light.svg (used in the dark UI) and logo-dark.svg, page title and two prefers-color-scheme favicon links; all icons replaced by vendored Material Symbols Rounded SVGs in src/ui/icons with one semantic map and one Icon component (filled variants for active tools, hidden layers and locked layers); old inline icon modules deleted.

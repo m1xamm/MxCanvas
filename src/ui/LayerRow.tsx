@@ -4,7 +4,8 @@ import type { NodeId, SceneNodeUnion } from '../core/document/types'
 import { layerRowCorners, rowOffset } from '../core/layers'
 import { useTranslation } from '../i18n/use-i18n'
 import { selectLayer, setHoveredLayer } from '../interaction/layer-list'
-import { LAYER_TYPE_ICONS, LockIcon, UnlockIcon, VisibilityIcon, VisibilityOffIcon } from './layer-icons'
+import { Icon } from './Icon'
+import { LAYER_TYPE_ICON_NAMES } from './icons'
 
 const RENAME_KEY_CODE = 'F2'
 const RENAME_COMMIT_KEY_CODE = 'Enter'
@@ -42,7 +43,7 @@ export function LayerRow(props: LayerRowProps) {
   const inputRef = useRef<HTMLInputElement | null>(null)
   const pressRef = useRef<PressState | null>(null)
   const cancelRef = useRef(false)
-  const TypeIcon = LAYER_TYPE_ICONS[node.type]
+  const typeIcon = LAYER_TYPE_ICON_NAMES[node.type]
 
   useEffect(() => {
     if (!renaming) return
@@ -117,7 +118,7 @@ export function LayerRow(props: LayerRowProps) {
       onMouseLeave={() => setHoveredLayer(null)}
     >
       <span class="layer-row__icon">
-        <TypeIcon />
+        <Icon name={typeIcon} size={16} />
       </span>
       {renaming ? (
         <input
@@ -151,7 +152,11 @@ export function LayerRow(props: LayerRowProps) {
           aria-label={t('toggleLayerVisibility')}
           onClick={() => props.onToggleVisible(node)}
         >
-          {node.visible ? <VisibilityIcon /> : <VisibilityOffIcon />}
+          {node.visible ? (
+            <Icon name="visibility" size={16} />
+          ) : (
+            <Icon name="visibilityOff" size={16} filled />
+          )}
         </button>
         <button
           type="button"
@@ -160,7 +165,11 @@ export function LayerRow(props: LayerRowProps) {
           aria-label={t('toggleLayerLock')}
           onClick={() => props.onToggleLock(node)}
         >
-          {node.locked ? <LockIcon /> : <UnlockIcon />}
+          {node.locked ? (
+            <Icon name="lock" size={16} filled />
+          ) : (
+            <Icon name="unlock" size={16} />
+          )}
         </button>
       </span>
     </div>

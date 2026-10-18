@@ -1,7 +1,8 @@
 import { useRef, useState } from 'preact/hooks'
 import { toolDefinition, type ToolGroup, type ToolId } from '../interaction/tools'
 import { useTranslation } from '../i18n/use-i18n'
-import { ChevronIcon, TOOL_ICONS } from './icons'
+import { Icon } from './Icon'
+import { TOOL_ICON_NAMES } from './icons'
 import { MenuItem } from './MenuItem'
 import { Popup } from './Popup'
 
@@ -19,7 +20,7 @@ export function ToolGroupButton({ group, tool, activeTool, onSelectTool }: ToolG
 
   const definition = toolDefinition(tool)
   const isActive = group.tools.includes(activeTool)
-  const Icon = TOOL_ICONS[tool]
+  const iconName = TOOL_ICON_NAMES[tool]
   const label = t(`tools.${tool}`)
 
   return (
@@ -33,7 +34,7 @@ export function ToolGroupButton({ group, tool, activeTool, onSelectTool }: ToolG
         disabled={!definition.available}
         onClick={() => onSelectTool(tool)}
       >
-        <Icon />
+        <Icon name={iconName} filled={isActive} />
       </button>
       <button
         type="button"
@@ -43,7 +44,7 @@ export function ToolGroupButton({ group, tool, activeTool, onSelectTool }: ToolG
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
       >
-        <ChevronIcon />
+        <Icon name="chevron" size={12} />
       </button>
       <Popup
         open={open}
@@ -58,7 +59,7 @@ export function ToolGroupButton({ group, tool, activeTool, onSelectTool }: ToolG
           return (
             <MenuItem
               key={id}
-              icon={TOOL_ICONS[id]}
+              icon={TOOL_ICON_NAMES[id]}
               label={t(`tools.${id}`)}
               hotkey={item.hotkey}
               disabled={!item.available}

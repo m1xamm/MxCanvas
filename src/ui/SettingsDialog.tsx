@@ -5,7 +5,7 @@ import { LANGUAGES, setLanguage } from '../i18n/i18n'
 import { useLanguage, useTranslation } from '../i18n/use-i18n'
 import { Cluster } from './Cluster'
 import { collectFocusable, nextFocusIndex } from './focus-trap'
-import { CloseIcon } from './icons'
+import { Icon } from './Icon'
 import { Switch } from './Switch'
 
 const ESCAPE_KEY_CODE = 'Escape'
@@ -69,7 +69,7 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
               aria-label={t('closeLabel')}
               onClick={onClose}
             >
-              <CloseIcon />
+              <Icon name="close" />
             </button>
           </div>
           <div class="dialog-row">

@@ -1,7 +1,7 @@
 import { useRef, useState } from 'preact/hooks'
 import type { RefObject } from 'preact'
+import logoLightUrl from '../assets/logo-light.svg'
 import { useTranslation } from '../i18n/use-i18n'
-import { AppIcon, SettingsIcon } from './icons'
 import { MenuItem } from './MenuItem'
 import { Popup } from './Popup'
 
@@ -27,7 +27,7 @@ export function MainMenu({ onOpenSettings, buttonRef }: MainMenuProps) {
         ref={anchorRef}
         onClick={() => setOpen((value) => !value)}
       >
-        <AppIcon />
+        <img class="menu-button__logo" src={logoLightUrl} alt="" width={20} height={20} />
       </button>
       <Popup
         open={open}
@@ -38,7 +38,7 @@ export function MainMenu({ onOpenSettings, buttonRef }: MainMenuProps) {
         onClose={() => setOpen(false)}
       >
         <MenuItem
-          icon={SettingsIcon}
+          icon="settings"
           label={t('settings')}
           onClick={() => {
             setOpen(false)

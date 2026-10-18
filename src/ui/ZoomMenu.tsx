@@ -3,7 +3,7 @@ import type { MessageKey } from '../i18n/i18n'
 import { useTranslation } from '../i18n/use-i18n'
 import { viewportActions, type ViewportActions } from '../app/viewport-actions'
 import { formatZoomPercent } from './format-zoom'
-import { ChevronIcon } from './icons'
+import { Icon } from './Icon'
 import { MenuItem } from './MenuItem'
 import { Popup } from './Popup'
 
@@ -44,7 +44,7 @@ export function ZoomMenu({ zoom }: ZoomMenuProps) {
         <span class="zoom-readout" aria-live="polite">
           {formatZoomPercent(zoom)}
         </span>
-        <ChevronIcon />
+        <Icon name="chevron" size={16} />
       </button>
       <Popup
         open={open}

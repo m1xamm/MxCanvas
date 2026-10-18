@@ -1,0 +1,105 @@
+import type { NodeType } from '../../core/document/types'
+import type { ToolId } from '../../interaction/tools'
+
+export type IconName =
+  | 'move'
+  | 'hand'
+  | 'scale'
+  | 'frame'
+  | 'section'
+  | 'slice'
+  | 'rectangle'
+  | 'line'
+  | 'arrow'
+  | 'ellipse'
+  | 'polygon'
+  | 'star'
+  | 'pen'
+  | 'pencil'
+  | 'text'
+  | 'chevron'
+  | 'visibility'
+  | 'visibilityOff'
+  | 'lock'
+  | 'unlock'
+  | 'settings'
+  | 'close'
+  | 'add'
+  | 'remove'
+  | 'link'
+  | 'linkOff'
+  | 'check'
+
+interface IconFiles {
+  outlined: string
+  filled: string
+}
+
+const ICON_FILES: Record<IconName, IconFiles> = {
+  move: { outlined: 'arrow_selector_tool', filled: 'arrow_selector_tool-fill' },
+  hand: { outlined: 'pan_tool', filled: 'pan_tool-fill' },
+  scale: { outlined: 'open_in_full', filled: 'open_in_full-fill' },
+  frame: { outlined: 'tag', filled: 'tag-fill' },
+  section: { outlined: 'crop_free', filled: 'crop_free-fill' },
+  slice: { outlined: 'content_cut', filled: 'content_cut-fill' },
+  rectangle: { outlined: 'rectangle', filled: 'rectangle-fill' },
+  line: { outlined: 'horizontal_rule', filled: 'horizontal_rule-fill' },
+  arrow: { outlined: 'north_east', filled: 'north_east-fill' },
+  ellipse: { outlined: 'circle', filled: 'circle-fill' },
+  polygon: { outlined: 'pentagon', filled: 'pentagon-fill' },
+  star: { outlined: 'star', filled: 'star-fill' },
+  pen: { outlined: 'ink_pen', filled: 'ink_pen-fill' },
+  pencil: { outlined: 'edit', filled: 'edit-fill' },
+  text: { outlined: 'text_fields', filled: 'text_fields-fill' },
+  chevron: { outlined: 'keyboard_arrow_down', filled: 'keyboard_arrow_down-fill' },
+  visibility: { outlined: 'visibility', filled: 'visibility-fill' },
+  visibilityOff: { outlined: 'visibility_off', filled: 'visibility_off-fill' },
+  lock: { outlined: 'lock', filled: 'lock-fill' },
+  unlock: { outlined: 'lock_open', filled: 'lock_open-fill' },
+  settings: { outlined: 'settings', filled: 'settings-fill' },
+  close: { outlined: 'close', filled: 'close-fill' },
+  add: { outlined: 'add', filled: 'add-fill' },
+  remove: { outlined: 'remove', filled: 'remove-fill' },
+  link: { outlined: 'link', filled: 'link-fill' },
+  linkOff: { outlined: 'link_off', filled: 'link_off-fill' },
+  check: { outlined: 'check', filled: 'check-fill' },
+}
+
+export const TOOL_ICON_NAMES: Record<ToolId, IconName> = {
+  move: 'move',
+  hand: 'hand',
+  scale: 'scale',
+  frame: 'frame',
+  section: 'section',
+  slice: 'slice',
+  rectangle: 'rectangle',
+  line: 'line',
+  arrow: 'arrow',
+  ellipse: 'ellipse',
+  polygon: 'polygon',
+  star: 'star',
+  pen: 'pen',
+  pencil: 'pencil',
+  text: 'text',
+}
+
+export const LAYER_TYPE_ICON_NAMES: Record<NodeType, IconName> = {
+  rectangle: 'rectangle',
+}
+
+const SOURCES = import.meta.glob('./*.svg', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+}) as Record<string, string>
+
+const SVG_BODY = /<svg[^>]*>([\s\S]*)<\/svg>/
+
+export function iconMarkup(name: IconName, filled: boolean): string {
+  const files = ICON_FILES[name]
+  const source = SOURCES[`./${filled ? files.filled : files.outlined}.svg`]
+  if (source === undefined) throw new Error(`Missing icon asset: ${name}`)
+  const match = SVG_BODY.exec(source)
+  if (!match || !match[1]) throw new Error(`Unreadable icon asset: ${name}`)
+  return match[1].trim()
+}
