@@ -87,3 +87,4 @@
 - Task 4 (part 1): pure color math (hex/rgb/hsv, paint cloning, css strings) and the safe number expression parser with formatting, both tested.
 
 - Task 4 (part 2): paints gained a visibility flag and nodes a constrainProportions lock; document setters for fills, opacity, corner radius and constrain proportions; mergeable SetFills/SetOpacity/SetCornerRadius commands plus SetConstrainProportions, all covered by undo/redo tests; the renderer now draws every visible fill bottom to top.
+- Task 4 (part 3): selection box helpers with ratio and minimum size, mergeable resize commands, pure fill summaries; the right Design panel now has NumberField rows (scrub, arrows with shift and alt steps, expressions, escape, mixed placeholders), a lock-proportions toggle, fill rows with swatch, hex, percent, eye and remove, and a live custom color picker (SV square, hue, alpha, hex) with math covered by tests.
