@@ -207,6 +207,8 @@
   place-items: center;
   width: var(--toolbar-button-size);
   height: var(--toolbar-button-size);
+  border-radius: inherit;
+  transition: border-radius var(--motion-medium) var(--motion-easing);
 }
 
 .tool-group__chevron {
@@ -342,4 +344,36 @@
   height: 28px;
   border-radius: var(--radius-pill);
   color: var(--color-on-surface-variant);
+}
+
+.switch {
+  position: relative;
+  flex: none;
+  width: var(--switch-width);
+  height: var(--switch-height);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-container-high);
+  transition: background var(--motion-fast) var(--motion-easing);
+}
+
+.switch.is-checked {
+  background: var(--color-primary);
+}
+
+.switch__thumb {
+  position: absolute;
+  top: var(--switch-thumb-inset);
+  left: var(--switch-thumb-inset);
+  width: var(--switch-thumb-size);
+  height: var(--switch-thumb-size);
+  border-radius: var(--radius-pill);
+  background: var(--color-on-surface-variant);
+  transition:
+    transform var(--motion-medium) var(--motion-easing),
+    background var(--motion-fast) var(--motion-easing);
+}
+
+.switch.is-checked .switch__thumb {
+  background: var(--color-on-primary);
+  transform: translateX(var(--switch-thumb-travel));
 }
