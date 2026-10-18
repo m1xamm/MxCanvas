@@ -5,6 +5,7 @@ export const DEFAULT_RECTANGLE_FILL: SolidPaint = {
   type: 'solid',
   color: { r: 217, g: 217, b: 217 },
   opacity: 1,
+  visible: true,
 }
 
 export interface RectangleNodeInit {
@@ -30,6 +31,7 @@ export function createRectangleNode(init: RectangleNodeInit): RectangleNode {
     visible: true,
     locked: false,
     opacity: 1,
+    constrainProportions: false,
     fills: [{ ...DEFAULT_RECTANGLE_FILL, color: { ...DEFAULT_RECTANGLE_FILL.color } }],
     cornerRadius: 0,
   }

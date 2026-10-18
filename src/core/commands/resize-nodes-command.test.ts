@@ -18,6 +18,7 @@ function createRectangle(id: string, x: number, y: number, size = 100): Rectangl
     visible: true,
     locked: false,
     opacity: 1,
+    constrainProportions: false,
     fills: [],
     cornerRadius: 0,
   }

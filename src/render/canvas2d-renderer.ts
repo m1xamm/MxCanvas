@@ -1,6 +1,7 @@
 import { DEFAULT_RECTANGLE_FILL } from '../core/document/create-node'
-import type { NodeId, SceneNodeUnion, SceneReader, SolidPaint } from '../core/document/types'
+import type { NodeId, SceneNodeUnion, SceneReader } from '../core/document/types'
 import { canvasGrid } from '../core/canvas-grid'
+import { paintToCss } from '../core/color'
 import { pixelGrid } from '../core/pixel-grid'
 import { applyToPoint, multiply, scaling, type Mat2D } from '../core/math/matrix'
 import { transformRect, type Rect } from '../core/math/rect'
@@ -187,12 +188,14 @@ export class Canvas2DRenderer implements Renderer {
     const context = this.#context
     const preview = this.#previews.get(node.id)
     const box: NodeBox = preview ?? node
-    const paint = node.fills[0]
     this.#applyTransform(multiply(deviceViewport, this.#nodeWorldTransform(node, preview)))
-    context.globalAlpha = node.opacity
-    context.fillStyle = paint ? paintToCss(paint) : 'transparent'
     this.#traceNodePath(node, box.width, box.height)
-    context.fill()
+    context.globalAlpha = node.opacity
+    for (const paint of node.fills) {
+      if (!paint.visible) continue
+      context.fillStyle = paintToCss(paint)
+      context.fill()
+    }
     context.globalAlpha = 1
   }
 
@@ -290,9 +293,4 @@ export class Canvas2DRenderer implements Renderer {
   #applyScreenTransform(): void {
     this.#context.setTransform(this.#devicePixelRatio, 0, 0, this.#devicePixelRatio, 0, 0)
   }
-}
-
-function paintToCss(paint: SolidPaint): string {
-  const { r, g, b } = paint.color
-  return `rgba(${r}, ${g}, ${b}, ${paint.opacity})`
 }

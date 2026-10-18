@@ -86,3 +86,4 @@
 
 - Task 4 (part 1): pure color math (hex/rgb/hsv, paint cloning, css strings) and the safe number expression parser with formatting, both tested.
 
+- Task 4 (part 2): paints gained a visibility flag and nodes a constrainProportions lock; document setters for fills, opacity, corner radius and constrain proportions; mergeable SetFills/SetOpacity/SetCornerRadius commands plus SetConstrainProportions, all covered by undo/redo tests; the renderer now draws every visible fill bottom to top.

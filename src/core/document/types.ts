@@ -14,6 +14,7 @@ export interface SolidPaint {
   type: 'solid'
   color: RgbColor
   opacity: number
+  visible: boolean
 }
 
 export type Paint = SolidPaint
@@ -30,6 +31,7 @@ export interface SceneNode {
   visible: boolean
   locked: boolean
   opacity: number
+  constrainProportions: boolean
 }
 
 export interface RectangleNode extends SceneNode {

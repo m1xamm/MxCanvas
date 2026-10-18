@@ -17,6 +17,7 @@ function createRectangle(id: string, parentId: NodeId | null = null): RectangleN
     visible: true,
     locked: false,
     opacity: 1,
+    constrainProportions: false,
     fills: [],
     cornerRadius: 0,
   }

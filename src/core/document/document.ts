@@ -1,5 +1,6 @@
 import { multiply, type Mat2D } from '../math/matrix'
-import type { NodeId, SceneNodeUnion } from './types'
+import { clonePaint } from '../color'
+import type { NodeId, Paint, SceneNodeUnion } from './types'
 import type { NodeBox } from '../transform'
 
 export class Document {
@@ -70,8 +71,35 @@ export class Document {
     this.#markChanged()
   }
 
-  moveNodeToIndex(id: NodeId, index: number): void {
-    const siblings = this.#siblingIds(id)
+  setNodeFills(id: NodeId, fills: readonly Paint[]): void {
+    const node = this.#nodes.get(id)
+    if (!node) return
+    node.fills = fills.map(clonePaint)
+    this.#markChanged()
+  }
+
+  setNodeOpacity(id: NodeId, opacity: number): void {
+    const node = this.#nodes.get(id)
+    if (!node) return
+    node.opacity = clampUnit(opacity)
+    this.#markChanged()
+  }
+
+  setNodeCornerRadius(id: NodeId, radius: number): void {
+    const node = this.#nodes.get(id)
+    if (!node) return
+    node.cornerRadius = clampRadius(radius, node.width, node.height)
+    this.#markChanged()
+  }
+
+  setNodeConstrainProportions(id: NodeId, value: boolean): void {
+    const node = this.#nodes.get(id)
+    if (!node || node.constrainProportions === value) return
+    node.constrainProportions = value
+    this.#markChanged()
+  }
+
+  moveNodeToIndex(id: NodeId, index: number): void {    const siblings = this.#siblingIds(id)
     const from = siblings.indexOf(id)
     if (from === -1) return
     const to = clampIndex(index, siblings.length - 1)
@@ -138,4 +166,14 @@ export class Document {
 
 function clampIndex(index: number, length: number): number {
   return Math.min(Math.max(index, 0), length)
+}
+
+function clampUnit(value: number): number {
+  if (!Number.isFinite(value)) return 0
+  return Math.min(1, Math.max(0, value))
+}
+
+function clampRadius(radius: number, width: number, height: number): number {
+  if (!Number.isFinite(radius)) return 0
+  return Math.min(Math.max(0, radius), Math.min(width, height) / 2)
 }

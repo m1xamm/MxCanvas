@@ -29,6 +29,7 @@ function createRectangle(options: RectangleOptions): RectangleNode {
     visible: options.visible ?? true,
     locked: options.locked ?? false,
     opacity: 1,
+    constrainProportions: false,
     fills: [],
     cornerRadius: 0,
   }
