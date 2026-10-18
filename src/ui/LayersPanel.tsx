@@ -29,7 +29,7 @@ export function LayersPanel() {
   const t = useTranslation()
   const sceneVersion = useSceneVersion()
   const selection = useStoreValue(selectionStore)
-  const listRef = useRef<HTMLDivElement | null>(null)
+  const [listElement, setListElement] = useState<HTMLDivElement | null>(null)
   const draggedIdRef = useRef<NodeId | null>(null)
   const [scrollTop, setScrollTop] = useState(0)
   const [viewportHeight, setViewportHeight] = useState(0)
@@ -42,23 +42,21 @@ export function LayersPanel() {
   const visibleIds = order.slice(rows.start, rows.end)
 
   useEffect(() => {
-    const list = listRef.current
-    if (!list) return
-    const measure = () => setViewportHeight(list.clientHeight)
+    if (!listElement) return
+    const measure = () => setViewportHeight(listElement.clientHeight)
     measure()
     const observer = new ResizeObserver(measure)
-    observer.observe(list)
+    observer.observe(listElement)
     return () => observer.disconnect()
-  }, [])
+  }, [listElement])
 
   useEffect(() => {
-    const list = listRef.current
-    if (!list) return
+    if (!listElement) return
     const index = order.findIndex((id) => selection.includes(id))
     if (index === -1) return
-    const target = revealRow(list.scrollTop, list.clientHeight, index)
-    if (target !== null) list.scrollTop = target
-  }, [selection, sceneVersion])
+    const target = revealRow(listElement.scrollTop, listElement.clientHeight, index)
+    if (target !== null) listElement.scrollTop = target
+  }, [selection, sceneVersion, listElement])
 
   const handleScroll = (event: TargetedEvent<HTMLDivElement, Event>) => {
     setScrollTop(event.currentTarget.scrollTop)
@@ -76,11 +74,10 @@ export function LayersPanel() {
   }
 
   const handleDragMove = (clientY: number) => {
-    const list = listRef.current
     const id = draggedIdRef.current
-    if (!list || !id) return
-    const rect = list.getBoundingClientRect()
-    const contentY = clientY - rect.top + list.scrollTop
+    if (!listElement || !id) return
+    const rect = listElement.getBoundingClientRect()
+    const contentY = clientY - rect.top + listElement.scrollTop
     setDropTarget({ id, boundary: dropBoundary(contentY, rowCount) })
   }
 
@@ -102,7 +99,7 @@ export function LayersPanel() {
       ) : (
         <div
           class="layers-list"
-          ref={listRef}
+          ref={setListElement}
           role="listbox"
           aria-multiselectable="true"
           aria-label={t('layers')}
