@@ -1,4 +1,5 @@
 import { DeleteNodesCommand } from '../core/commands/delete-nodes-command'
+import { alignRects, distributeRects, type AlignMode, type DistributeMode } from '../core/align'
 import { MoveNodesCommand } from '../core/commands/move-nodes-command'
 import { RenameNodeCommand } from '../core/commands/rename-node-command'
 import { ReorderNodesCommand } from '../core/commands/reorder-nodes-command'
@@ -20,11 +21,14 @@ import type { Vec2 } from '../core/math/matrix'
 import type { Rect } from '../core/math/rect'
 import { History } from '../core/history'
 import {
+  rectBoxChanges,
   selectionBoxChanges,
   selectionConstrained,
+  selectionEntries,
   selectionNodes,
   selectionRect,
   targetRect,
+  type SelectionEntry,
   type SelectionField,
 } from '../core/selection-box'
 import { pruneSelection, selectionStore, setSelection } from '../interaction/selection'
@@ -54,6 +58,21 @@ export function nudgeSelection(delta: Vec2): void {
 export function resizeSelection(changes: readonly NodeBoxChange[]): void {
   if (changes.length === 0) return
   history.execute(new ResizeNodesCommand(scene, changes))
+}
+
+export function alignSelection(mode: AlignMode): void {
+  applySelectionRects((entries) => alignRects(entries.map((entry) => entry.rect), mode))
+}
+
+export function distributeSelection(mode: DistributeMode): void {
+  applySelectionRects((entries) => distributeRects(entries.map((entry) => entry.rect), mode))
+}
+
+function applySelectionRects(compute: (entries: readonly SelectionEntry[]) => Rect[]): void {
+  const entries = selectionEntries(scene, selectionStore.get())
+  if (entries.length < 2) return
+  const changes = rectBoxChanges(scene, entries, compute(entries))
+  if (changes.length > 0) history.execute(new ResizeNodesCommand(scene, changes))
 }
 
 export function setSelectionField(field: SelectionField, value: number, live = false): void {

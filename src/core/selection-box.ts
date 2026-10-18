@@ -7,15 +7,25 @@ import { nodeBox, nodeWorldRect, worldRectToBox } from './transform'
 
 export type SelectionField = 'x' | 'y' | 'width' | 'height'
 
+export interface SelectionEntry {
+  id: NodeId
+  node: SceneNodeUnion
+  rect: Rect
+}
+
 export const MIN_NODE_SIZE = 1
 
-export function selectionRect(document: Document, ids: readonly NodeId[]): Rect | null {
-  const rects: Rect[] = []
+export function selectionEntries(document: Document, ids: readonly NodeId[]): SelectionEntry[] {
+  const entries: SelectionEntry[] = []
   for (const id of topLevelIds(document, ids)) {
     const node = document.getNode(id)
-    if (node) rects.push(nodeWorldRect(document, node))
+    if (node) entries.push({ id, node, rect: nodeWorldRect(document, node) })
   }
-  return boundsOfRects(rects)
+  return entries
+}
+
+export function selectionRect(document: Document, ids: readonly NodeId[]): Rect | null {
+  return boundsOfRects(selectionEntries(document, ids).map((entry) => entry.rect))
 }
 
 export function targetRect(
@@ -43,16 +53,29 @@ export function selectionBoxChanges(
 ): NodeBoxChange[] {
   const source = selectionRect(document, ids)
   if (!source || (source.width === 0 && source.height === 0)) return []
+  const entries = selectionEntries(document, ids)
+  return rectBoxChanges(
+    document,
+    entries,
+    entries.map((entry) => mapRectWithBounds(entry.rect, source, target)),
+  )
+}
+
+export function rectBoxChanges(
+  document: Document,
+  entries: readonly SelectionEntry[],
+  targets: readonly Rect[],
+): NodeBoxChange[] {
   const changes: NodeBoxChange[] = []
-  for (const id of topLevelIds(document, ids)) {
-    const node = document.getNode(id)
-    if (!node) continue
+  entries.forEach((entry, index) => {
+    const target = targets[index]
+    if (!target) return
     changes.push({
-      id,
-      from: nodeBox(node),
-      to: worldRectToBox(document, node, mapRectWithBounds(nodeWorldRect(document, node), source, target)),
+      id: entry.id,
+      from: nodeBox(entry.node),
+      to: worldRectToBox(document, entry.node, target),
     })
-  }
+  })
   return changes
 }
 

@@ -40,6 +40,7 @@ const ACTION_LOCK_INDEX = 1
 const FILL_HEX_INDEX = 0
 const FILL_OPACITY_INDEX = 1
 const MIXED_OPACITY_PERCENT = '40'
+const ALIGN_LEFT_INDEX = 0
 
 async function withPage(viewport, run) {
   const server = await createServer({ server: { port: 5199, strictPort: true } })
@@ -240,14 +241,22 @@ async function runPropertiesShots(page) {
 }
 
 async function runMixedPropertiesShots(page) {
+  await layerRow(page, LAYER_SINGLE_ROW).click()
+  await layerRow(page, LAYER_MULTI_ROW).click({ modifiers: ['Control'] })
+  await layerRow(page, LAYER_HOVER_ROW).click({ modifiers: ['Control'] })
+  await parkPointer(page)
   await capture(page, 'properties-multi')
+
+  await page.locator('.align-button').nth(ALIGN_LEFT_INDEX).click()
+  await parkPointer(page)
+  await capture(page, 'align-applied')
 
   await layerRow(page, LAYER_SINGLE_ROW).click()
   const opacityField = page.locator('.fill-row .field__input').nth(FILL_OPACITY_INDEX)
   await opacityField.click()
   await opacityField.fill(MIXED_OPACITY_PERCENT)
   await page.keyboard.press('Enter')
-  await layerRow(page, LAYER_MULTI_ROW).click({ modifiers: ['Shift'] })
+  await layerRow(page, LAYER_MULTI_ROW).click({ modifiers: ['Control'] })
   await parkPointer(page)
   await capture(page, 'properties-mixed')
 

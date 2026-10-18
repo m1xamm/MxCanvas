@@ -31,6 +31,14 @@ export type IconName =
   | 'check'
   | 'cornerRadius'
   | 'opacity'
+  | 'alignLeft'
+  | 'alignCenterX'
+  | 'alignRight'
+  | 'alignTop'
+  | 'alignCenterY'
+  | 'alignBottom'
+  | 'distributeX'
+  | 'distributeY'
 
 interface IconFiles {
   outlined: string
@@ -67,6 +75,14 @@ const ICON_FILES: Record<IconName, IconFiles> = {
   check: { outlined: 'check', filled: 'check-fill' },
   cornerRadius: { outlined: 'rounded_corner', filled: 'rounded_corner-fill' },
   opacity: { outlined: 'opacity', filled: 'opacity-fill' },
+  alignLeft: { outlined: 'align_horizontal_left', filled: 'align_horizontal_left-fill' },
+  alignCenterX: { outlined: 'align_horizontal_center', filled: 'align_horizontal_center-fill' },
+  alignRight: { outlined: 'align_horizontal_right', filled: 'align_horizontal_right-fill' },
+  alignTop: { outlined: 'align_vertical_top', filled: 'align_vertical_top-fill' },
+  alignCenterY: { outlined: 'align_vertical_center', filled: 'align_vertical_center-fill' },
+  alignBottom: { outlined: 'align_vertical_bottom', filled: 'align_vertical_bottom-fill' },
+  distributeX: { outlined: 'horizontal_distribute', filled: 'horizontal_distribute-fill' },
+  distributeY: { outlined: 'vertical_distribute', filled: 'vertical_distribute-fill' },
 }
 
 export const TOOL_ICON_NAMES: Record<ToolId, IconName> = {

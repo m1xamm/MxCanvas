@@ -1,6 +1,8 @@
 import { selectionStore } from '../../interaction/selection'
 import {
   addSelectionFill,
+  alignSelection,
+  distributeSelection,
   removeSelectionFill,
   scene,
   setSelectionConstrainProportions,
@@ -14,15 +16,46 @@ import {
 import { useStoreValue } from '../../app/use-store-value'
 import { useSceneVersion } from '../../app/use-scene-version'
 import { summarizeFills } from '../../core/fills'
+import type { AlignMode, DistributeMode } from '../../core/align'
 import { selectionNodes, selectionRect } from '../../core/selection-box'
 import type { RectangleNode, SceneNodeUnion } from '../../core/document/types'
+import type { MessageKey } from '../../i18n/i18n'
 import { useTranslation } from '../../i18n/use-i18n'
 import { Cluster } from '../Cluster'
 import { Icon } from '../Icon'
+import type { IconName } from '../icons'
 import { FillRow } from './FillRow'
 import { NumberField } from './NumberField'
 
 const MIN_SIZE = 1
+const MIN_ALIGN_COUNT = 2
+const MIN_DISTRIBUTE_COUNT = 3
+
+interface AlignAction {
+  icon: IconName
+  label: MessageKey
+  mode: AlignMode
+}
+
+interface DistributeAction {
+  icon: IconName
+  label: MessageKey
+  mode: DistributeMode
+}
+
+const ALIGN_ACTIONS: readonly AlignAction[] = [
+  { icon: 'alignLeft', label: 'alignLeft', mode: 'left' },
+  { icon: 'alignCenterX', label: 'alignCenterX', mode: 'centerX' },
+  { icon: 'alignRight', label: 'alignRight', mode: 'right' },
+  { icon: 'alignTop', label: 'alignTop', mode: 'top' },
+  { icon: 'alignCenterY', label: 'alignCenterY', mode: 'centerY' },
+  { icon: 'alignBottom', label: 'alignBottom', mode: 'bottom' },
+]
+
+const DISTRIBUTE_ACTIONS: readonly DistributeAction[] = [
+  { icon: 'distributeX', label: 'distributeX', mode: 'horizontal' },
+  { icon: 'distributeY', label: 'distributeY', mode: 'vertical' },
+]
 
 export function PropertiesPanel() {
   const t = useTranslation()
@@ -38,6 +71,40 @@ export function PropertiesPanel() {
 
   return (
     <>
+      {ids.length >= MIN_ALIGN_COUNT && (
+        <div class="block block--section">
+          <span class="section-title">{t('sections.align')}</span>
+          <Cluster>
+            {ALIGN_ACTIONS.map((action) => (
+              <button
+                key={action.mode}
+                type="button"
+                class="control align-button"
+                aria-label={t(action.label)}
+                title={t(action.label)}
+                onClick={() => alignSelection(action.mode)}
+              >
+                <Icon name={action.icon} size={16} />
+              </button>
+            ))}
+          </Cluster>
+          <Cluster>
+            {DISTRIBUTE_ACTIONS.map((action) => (
+              <button
+                key={action.mode}
+                type="button"
+                class="control align-button"
+                aria-label={t(action.label)}
+                title={t(action.label)}
+                disabled={ids.length < MIN_DISTRIBUTE_COUNT}
+                onClick={() => distributeSelection(action.mode)}
+              >
+                <Icon name={action.icon} size={16} />
+              </button>
+            ))}
+          </Cluster>
+        </div>
+      )}
       {rect && (
         <div class="block block--section">
           <span class="section-title">{t('sections.position')}</span>
