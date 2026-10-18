@@ -301,6 +301,8 @@
 
 .menu-button__logo {
   display: block;
+  width: 28px;
+  height: 28px;
 }
 
 .popup {

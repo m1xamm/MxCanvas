@@ -72,6 +72,11 @@ async function capture(page, name, zoomSteps = 0) {
   await page.screenshot({ path: `${OUTPUT_DIR}${name}.png` })
 }
 
+async function captureCrop(page, name, clip) {
+  await page.waitForTimeout(SETTLE_MS)
+  await page.screenshot({ path: `${OUTPUT_DIR}${name}.png`, clip })
+}
+
 async function parkPointer(page) {
   await page.mouse.move(POINTER_PARK.x, POINTER_PARK.y)
 }
@@ -271,6 +276,7 @@ async function runMixedPropertiesShots(page) {
 
 async function runShots(page) {
   await capture(page, 'initial')
+  await captureCrop(page, 'logo-crop', { x: 6, y: 6, width: 52, height: 52 })
   await capture(page, 'grid-default')
 
   await zoomWithWheel(page, GRID_ZOOM_WHEEL_DELTA)

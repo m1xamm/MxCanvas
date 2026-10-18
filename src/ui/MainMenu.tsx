@@ -1,6 +1,6 @@
 import { useRef, useState } from 'preact/hooks'
 import type { RefObject } from 'preact'
-import logoLightUrl from '../assets/logo-light.svg'
+import logoDarkUrl from '../assets/logo-dark.svg'
 import { useTranslation } from '../i18n/use-i18n'
 import { MenuItem } from './MenuItem'
 import { Popup } from './Popup'
@@ -27,7 +27,7 @@ export function MainMenu({ onOpenSettings, buttonRef }: MainMenuProps) {
         ref={anchorRef}
         onClick={() => setOpen((value) => !value)}
       >
-        <img class="menu-button__logo" src={logoLightUrl} alt="" width={20} height={20} />
+        <img class="menu-button__logo" src={logoDarkUrl} alt="" width={28} height={28} />
       </button>
       <Popup
         open={open}
