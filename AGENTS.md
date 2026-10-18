@@ -45,13 +45,17 @@ Rules:
 - Design hit-testing so a spatial index can be added later.
 - Target: 60 fps with 5,000 simple nodes.
 
+## Motion
+Motion must explain a state change. No decorative motion. Allowed: tonal state-layer transitions, color and corner-radius morph between states of the same control, popup and dialog open and close (fade plus slight scale), switch thumb, hover growth of resize handles. Forbidden: sliding indicators between controls, staggered or entrance animations on load, per-item staggers, bounce on layout, press scale.
+
 ## UI / design
 Figma UI3 layout, Material 3 Expressive look, dark gray theme.
+Structure, placement and behavior of every UI element mirror Figma UI3 so a Figma user feels at home; the visual style (22/4 clusters, tonal ladder, icons, motion) is ours.
 Shape tokens in theme.css: --radius-outer: 22px, --radius-seam: 4px, --gap-cluster: 4px, --gap-screen: 8px.
 Cluster pattern: related blocks sit in a cluster of separate tonal blocks 4px apart. The cluster's outer corners are 22px, corners where two blocks touch are 4px. One reusable `Cluster` (CSS utility + Preact component, horizontal and vertical) sets radii by position (first/middle/last/only). Use it for: toolbar buttons, left panel blocks, right panel sections (Position, Layout, Appearance, Fill, Stroke, Effects, Export), property rows, segmented controls.
 Panels float 8px from the window edges. No 1px borders, no divider lines: separation is only the 4px gap and tone difference. No shadows anywhere (no box-shadow, no drop-shadow). Elevation is tonal only.
 Active controls: primary container tone and pill shape (radius transition). Motion 150-250ms, emphasized easing.
-All colors, spacing, radii, typography and motion come from CSS variables in src/ui/theme. Never hardcode them. Icons: Material Symbols Rounded (Apache 2.0), vendored as SVG files for only the icons actually used into src/ui/icons and rendered through one Icon component (20px default, currentColor, outlined at rest, filled for active or selected states). No other icon source. Brand: logos are src/assets/logo-dark.svg and src/assets/logo-light.svg.
+All colors, spacing, radii, typography and motion come from CSS variables in src/ui/theme. Never hardcode them. Icons: Material Symbols Rounded (Apache 2.0), vendored as SVG files for only the icons actually used into src/ui/icons and rendered through one Icon component (20px default, currentColor, outlined at rest, filled for active or selected states). No other icon source. Brand: logos are src/assets/logo-dark.svg and src/assets/logo-light.svg; logo-dark.svg is the logo for the dark theme and logo-light.svg for the light theme (named by theme, not by the color of the mark).
 
 ## Localization
 - UI languages: Russian (default) and English. All UI strings live in src/i18n/ru.ts and en.ts as typed dictionaries, accessed via `t(key)`. No hardcoded strings in components.
