@@ -17,6 +17,10 @@ export class Document {
     return this.#rootChildren
   }
 
+  getSiblingIds(id: NodeId): readonly NodeId[] {
+    return this.#siblingIds(id)
+  }
+
   getNode(id: NodeId): SceneNodeUnion | undefined {
     return this.#nodes.get(id)
   }
@@ -43,6 +47,45 @@ export class Document {
     node.width = box.width
     node.height = box.height
     this.#markChanged()
+  }
+
+  setNodeName(id: NodeId, name: string): void {
+    const node = this.#nodes.get(id)
+    if (!node || node.name === name) return
+    node.name = name
+    this.#markChanged()
+  }
+
+  setNodeVisible(id: NodeId, visible: boolean): void {
+    const node = this.#nodes.get(id)
+    if (!node || node.visible === visible) return
+    node.visible = visible
+    this.#markChanged()
+  }
+
+  setNodeLocked(id: NodeId, locked: boolean): void {
+    const node = this.#nodes.get(id)
+    if (!node || node.locked === locked) return
+    node.locked = locked
+    this.#markChanged()
+  }
+
+  moveNodeToIndex(id: NodeId, index: number): void {
+    const siblings = this.#siblingIds(id)
+    const from = siblings.indexOf(id)
+    if (from === -1) return
+    const to = clampIndex(index, siblings.length - 1)
+    if (from === to) return
+    siblings.splice(from, 1)
+    siblings.splice(to, 0, id)
+    this.#markChanged()
+  }
+
+  #siblingIds(id: NodeId): NodeId[] {
+    const node = this.#nodes.get(id)
+    if (!node) return []
+    if (node.parentId === null) return this.#rootChildren
+    return this.#nodes.get(node.parentId)?.children ?? []
   }
 
   getWorldTransform(id: NodeId): Mat2D {
