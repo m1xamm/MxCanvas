@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks'
 import type { RefObject } from 'preact'
 import { useTranslation } from '../i18n/use-i18n'
 import { Cluster } from './Cluster'
+import { LayersPanel } from './LayersPanel'
 import { MainMenu } from './MainMenu'
 
 const PANEL_TABS = ['file', 'assets'] as const
@@ -55,10 +56,7 @@ export function LeftPanel({ onOpenSettings, menuButtonRef }: LeftPanelProps) {
               </div>
             </Cluster>
           </div>
-          <div class="block block--section block--fill">
-            <span class="section-title">{t('layers')}</span>
-            <p class="panel-text">{t('noLayers')}</p>
-          </div>
+          <LayersPanel />
         </>
       ) : (
         <div class="block block--section block--fill">

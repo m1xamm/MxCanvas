@@ -1,26 +1,8 @@
-import type { ComponentChildren, JSX } from 'preact'
+import type { JSX } from 'preact'
 import type { ToolId } from '../interaction/tools'
+import { IconBase } from './icon-base'
 
-const ICON_SIZE_PX = 20
-const ICON_STROKE_WIDTH = 1.8
-
-function IconBase({ children }: { children: ComponentChildren }) {
-  return (
-    <svg
-      width={ICON_SIZE_PX}
-      height={ICON_SIZE_PX}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width={ICON_STROKE_WIDTH}
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      aria-hidden="true"
-    >
-      {children}
-    </svg>
-  )
-}
+const CHEVRON_SIZE_PX = 8
 
 function MoveIcon() {
   return (
@@ -155,8 +137,8 @@ function PencilIcon() {
 export function ChevronIcon() {
   return (
     <svg
-      width="8"
-      height="8"
+      width={CHEVRON_SIZE_PX}
+      height={CHEVRON_SIZE_PX}
       viewBox="0 0 8 8"
       fill="none"
       stroke="currentColor"

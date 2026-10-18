@@ -14,6 +14,9 @@ export const en = {
   noAssets: 'No assets yet',
   languageLabel: 'Language',
   canvasGridLabel: 'Canvas grid',
+  renameLayer: 'Rename layer',
+  toggleLayerVisibility: 'Show or hide layer',
+  toggleLayerLock: 'Lock or unlock layer',
   languages: {
     ru: 'Русский',
     en: 'English',

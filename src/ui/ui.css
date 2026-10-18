@@ -65,7 +65,7 @@
 .block--fill {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .panel-row {
@@ -376,4 +376,107 @@
 .switch.is-checked .switch__thumb {
   background: var(--color-on-primary);
   transform: translateX(var(--switch-thumb-travel));
+}
+
+.layers-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.layers-list__inner {
+  position: relative;
+}
+
+.layer-row {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 var(--space-1) 0 var(--space-2);
+  border-radius: var(--radius-row);
+  background: var(--color-surface-container);
+  color: var(--color-on-surface);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+.layer-row.is-selected {
+  background: var(--color-primary-container);
+  color: var(--color-on-primary-container);
+}
+
+.layer-row__icon {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  color: var(--color-on-surface-variant);
+}
+
+.layer-row.is-selected .layer-row__icon {
+  color: inherit;
+}
+
+.layer-row__name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.layer-row__input {
+  min-width: 0;
+  height: 22px;
+  padding: 0 var(--space-1);
+  border: none;
+  border-radius: var(--radius-seam);
+  outline-offset: 1px;
+  background: var(--color-surface-dim);
+  color: var(--color-on-surface);
+  font: inherit;
+}
+
+.layer-row__actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.layer-row__action {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-pill);
+  color: var(--color-on-surface-variant);
+  opacity: 0;
+  transition: opacity var(--motion-fast) var(--motion-easing);
+}
+
+.layer-row.is-selected .layer-row__action {
+  color: var(--color-on-primary-container);
+}
+
+.layer-row:hover .layer-row__action,
+.layer-row:focus-within .layer-row__action,
+.layer-row__action.is-on {
+  opacity: 1;
+}
+
+.layer-row__action.is-on {
+  color: var(--color-on-surface-subtle);
+}
+
+.layers-drop-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: var(--radius-pill);
+  background: var(--color-primary);
 }

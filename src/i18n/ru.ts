@@ -16,6 +16,9 @@ export const ru: Dictionary = {
   noAssets: 'Пока нет ресурсов',
   languageLabel: 'Язык',
   canvasGridLabel: 'Сетка на холсте',
+  renameLayer: 'Переименовать слой',
+  toggleLayerVisibility: 'Показать или скрыть слой',
+  toggleLayerLock: 'Заблокировать или разблокировать слой',
   languages: {
     ru: 'Русский',
     en: 'English',
