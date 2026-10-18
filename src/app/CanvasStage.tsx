@@ -4,10 +4,22 @@ import type { NodeId } from '../core/document/types'
 import type { NodeBox } from '../core/transform'
 import { Viewport } from '../core/viewport'
 import { CanvasController } from '../interaction/canvas-controller'
+import { hoveredLayerStore, setHoveredLayer } from '../interaction/layer-list'
 import { selectionStore, setSelection } from '../interaction/selection'
 import type { ToolId } from '../interaction/tools'
 import { Canvas2DRenderer } from '../render/canvas2d-renderer'
-import { createRectangle, deleteSelection, history, moveSelection, nudgeSelection, resizeSelection, scene } from './editor'
+import {
+  createRectangle,
+  deleteSelection,
+  history,
+  moveSelection,
+  nudgeSelection,
+  reorderSelection,
+  resizeSelection,
+  scene,
+  toggleSelectionLocked,
+  toggleSelectionVisible,
+} from './editor'
 import { isCanvasGridVisible, subscribeCanvasGrid } from './settings'
 import { observeDevicePixelRatio } from './observe-device-pixel-ratio'
 import { readViewportArea } from './viewport-area'
@@ -41,7 +53,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
     const renderer = new Canvas2DRenderer(canvas, viewport, {
       scene,
       getSelection: () => selectionStore.get(),
-      getHoveredId: () => controller?.hoveredId ?? null,
+      getHoveredId: () => hoveredLayerStore.get() ?? controller?.hoveredId ?? null,
       getHoveredHandle: () => controller?.hoveredHandle ?? null,
       getMarquee: () => controller?.marquee ?? null,
       getPreviews: () => controller?.previews ?? NO_PREVIEWS,
@@ -69,6 +81,9 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       onOverlayChange: () => renderer.requestRender(),
       onUndo: () => history.undo(),
       onRedo: () => history.redo(),
+      onToggleSelectionVisible: toggleSelectionVisible,
+      onToggleSelectionLocked: toggleSelectionLocked,
+      onReorderSelection: reorderSelection,
       getViewportArea: () => readViewportArea(canvas.clientWidth, canvas.clientHeight),
       isInputBlocked: () => blockedRef.current,
     })
@@ -95,12 +110,19 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
     const unsubscribeScene = scene.subscribe(() => renderer.requestRender())
     const unsubscribeSelection = selectionStore.subscribe(() => renderer.requestRender())
     const unsubscribeCanvasGrid = subscribeCanvasGrid(() => renderer.requestRender())
+    const unsubscribeLayerHover = hoveredLayerStore.subscribe(() => renderer.requestRender())
+    const clearLayerHover = () => setHoveredLayer(null)
+    canvas.addEventListener('pointermove', clearLayerHover)
+    canvas.addEventListener('pointerleave', clearLayerHover)
     const stopObservingDpr = observeDevicePixelRatio(resize)
     const resizeObserver = new ResizeObserver(resize)
     resizeObserver.observe(container)
     resize()
 
     return () => {
+      canvas.removeEventListener('pointermove', clearLayerHover)
+      canvas.removeEventListener('pointerleave', clearLayerHover)
+      unsubscribeLayerHover()
       resizeObserver.disconnect()
       stopObservingDpr()
       unsubscribeViewport()

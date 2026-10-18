@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { NodeBoxChange } from '../core/commands/node-box-change'
 import { Document } from '../core/document/document'
 import type { NodeId, RectangleNode } from '../core/document/types'
+import type { LayerOrderMode } from '../core/layers'
 import { translation, type Vec2 } from '../core/math/matrix'
 import type { Rect } from '../core/math/rect'
 import { Viewport } from '../core/viewport'
@@ -152,6 +153,9 @@ function setup(
   const onOverlayChange = vi.fn<() => void>()
   const onUndo = vi.fn<() => void>()
   const onRedo = vi.fn<() => void>()
+  const onToggleSelectionVisible = vi.fn<() => void>()
+  const onToggleSelectionLocked = vi.fn<() => void>()
+  const onReorderSelection = vi.fn<(mode: LayerOrderMode) => void>()
   let selection: readonly NodeId[] = []
   const onSelectionChange = vi.fn<(ids: readonly NodeId[]) => void>((ids) => {
     selection = ids
@@ -171,6 +175,9 @@ function setup(
     onOverlayChange,
     onUndo,
     onRedo,
+    onToggleSelectionVisible,
+    onToggleSelectionLocked,
+    onReorderSelection,
     getViewportArea: options.getViewportArea,
   })
   return {
@@ -189,6 +196,9 @@ function setup(
     onOverlayChange,
     onUndo,
     onRedo,
+    onToggleSelectionVisible,
+    onToggleSelectionLocked,
+    onReorderSelection,
     getSelection: () => selection,
     controller,
   }
@@ -445,6 +455,29 @@ describe('CanvasController', () => {
     input.tagName = 'INPUT'
     fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyZ', ctrlKey: true, target: input as unknown as EventTarget }))
     expect(onUndo).not.toHaveBeenCalled()
+    controller.dispose()
+  })
+
+  it('toggles the visibility and the lock of the selection on ctrl+shift shortcuts', () => {
+    const { fakeWindow, onToggleSelectionVisible, onToggleSelectionLocked, controller } = setup()
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyH', ctrlKey: true, shiftKey: true }))
+    expect(onToggleSelectionVisible).toHaveBeenCalledTimes(1)
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyL', ctrlKey: true, shiftKey: true }))
+    expect(onToggleSelectionLocked).toHaveBeenCalledTimes(1)
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'KeyH', ctrlKey: true }))
+    expect(onToggleSelectionVisible).toHaveBeenCalledTimes(1)
+    controller.dispose()
+  })
+
+  it('reorders the selection with the bracket shortcuts', () => {
+    const { fakeWindow, onReorderSelection, controller } = setup()
+    const modes: LayerOrderMode[] = []
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'BracketRight', ctrlKey: true }))
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'BracketRight', ctrlKey: true, shiftKey: true }))
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'BracketLeft', ctrlKey: true }))
+    fakeWindow.dispatch('keydown', createKeyEvent({ code: 'BracketLeft', ctrlKey: true, shiftKey: true }))
+    for (const call of onReorderSelection.mock.calls) modes.push(call[0])
+    expect(modes).toEqual(['forward', 'front', 'backward', 'back'])
     controller.dispose()
   })
 

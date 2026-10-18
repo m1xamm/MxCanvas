@@ -1,5 +1,6 @@
 import type { NodeId, SceneReader } from '../core/document/types'
 import type { NodeBoxChange } from '../core/commands/node-box-change'
+import { type LayerOrderMode } from '../core/layers'
 import type { Vec2 } from '../core/math/matrix'
 import type { Rect } from '../core/math/rect'
 import { sceneBounds, type NodeBox } from '../core/transform'
@@ -22,6 +23,10 @@ const ESCAPE_KEY_CODE = 'Escape'
 const SELECT_ALL_KEY_CODE = 'KeyA'
 const UNDO_KEY_CODE = 'KeyZ'
 const REDO_ALTERNATE_KEY_CODE = 'KeyY'
+const TOGGLE_VISIBLE_KEY_CODE = 'KeyH'
+const TOGGLE_LOCKED_KEY_CODE = 'KeyL'
+const BRING_FORWARD_KEY_CODE = 'BracketRight'
+const SEND_BACKWARD_KEY_CODE = 'BracketLeft'
 const ZOOM_RESET_TARGET = 1
 const ZOOM_STEP = 2
 const NUDGE_STEP_PX = 1
@@ -55,6 +60,9 @@ export interface CanvasControllerOptions {
   onOverlayChange: () => void
   onUndo: () => void
   onRedo: () => void
+  onToggleSelectionVisible: () => void
+  onToggleSelectionLocked: () => void
+  onReorderSelection: (mode: LayerOrderMode) => void
   getViewportArea?: () => Rect
   isInputBlocked?: () => boolean
 }
@@ -354,6 +362,28 @@ export class CanvasController {
     if (event.code === ZOOM_OUT_KEY_CODE) {
       event.preventDefault()
       this.zoomOut()
+      return
+    }
+    if (event.code === TOGGLE_VISIBLE_KEY_CODE) {
+      if (!event.shiftKey) return
+      event.preventDefault()
+      this.#options.onToggleSelectionVisible()
+      return
+    }
+    if (event.code === TOGGLE_LOCKED_KEY_CODE) {
+      if (!event.shiftKey) return
+      event.preventDefault()
+      this.#options.onToggleSelectionLocked()
+      return
+    }
+    if (event.code === BRING_FORWARD_KEY_CODE) {
+      event.preventDefault()
+      this.#options.onReorderSelection(event.shiftKey ? 'front' : 'forward')
+      return
+    }
+    if (event.code === SEND_BACKWARD_KEY_CODE) {
+      event.preventDefault()
+      this.#options.onReorderSelection(event.shiftKey ? 'back' : 'backward')
       return
     }
     this.#handleHistoryShortcut(event)
