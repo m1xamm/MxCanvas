@@ -8,7 +8,7 @@ const VIEWPORT = { width: 1440, height: 900 }
 const NARROW_VIEWPORT = { width: 1100, height: 700 }
 const DEVICE_SCALE_FACTOR = 2
 const UI_LANGUAGE = 'ru-RU'
-const SETTLE_MS = 200
+const SETTLE_MS = 450
 const HOVER_SETTLE_MS = 300
 const TAB_LIMIT = 200
 

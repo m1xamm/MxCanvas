@@ -19,10 +19,24 @@ const LABEL_RADIUS_PX = 4
 export const HANDLE_HOVER_DURATION_MS = 120
 export const HANDLE_HOVER_MAX_SCALE = 1.25
 
+const LABEL_APPEAR_DURATION_MS = 160
+const LABEL_APPEAR_MIN_SCALE = 0.92
+
 export function handleHoverScale(elapsedMs: number): number {
   if (elapsedMs >= HANDLE_HOVER_DURATION_MS) return HANDLE_HOVER_MAX_SCALE
   const progress = Math.max(elapsedMs, 0) / HANDLE_HOVER_DURATION_MS
   return 1 + (HANDLE_HOVER_MAX_SCALE - 1) * progress
+}
+
+export function labelAppearScale(elapsedMs: number): number {
+  if (elapsedMs >= LABEL_APPEAR_DURATION_MS) return 1
+  const progress = Math.max(elapsedMs, 0) / LABEL_APPEAR_DURATION_MS
+  const eased = progress * progress * (3 - 2 * progress)
+  return LABEL_APPEAR_MIN_SCALE + (1 - LABEL_APPEAR_MIN_SCALE) * eased
+}
+
+export function labelAnimationDone(elapsedMs: number): boolean {
+  return elapsedMs >= LABEL_APPEAR_DURATION_MS
 }
 
 export interface SelectionOverlayInput {
@@ -33,6 +47,7 @@ export interface SelectionOverlayInput {
   devicePixelRatio: number
   hoveredHandle?: ResizeHandleId | null
   hoverScale?: number
+  labelScale?: number
 }
 
 export function drawSelectionOverlay(input: SelectionOverlayInput): void {
@@ -44,7 +59,7 @@ export function drawSelectionOverlay(input: SelectionOverlayInput): void {
   context.strokeStyle = colors.primary
   strokePixelRect(context, screen)
   drawHandles(context, screen, colors, input.hoveredHandle ?? null, input.hoverScale ?? 1)
-  drawSizeLabel(context, screen, bounds, colors)
+  drawSizeLabel(context, screen, bounds, colors, input.labelScale ?? 1)
 }
 
 function drawHandles(
@@ -73,6 +88,7 @@ function drawSizeLabel(
   screen: Rect,
   bounds: Rect,
   colors: ThemeColors,
+  scale: number,
 ): void {
   const text = `${Math.round(bounds.width)} × ${Math.round(bounds.height)}`
   context.font = `${LABEL_FONT_SIZE_PX}px ${colors.fontFamily}`
@@ -82,12 +98,19 @@ function drawSizeLabel(
   const height = LABEL_FONT_SIZE_PX + LABEL_PADDING_Y_PX * 2
   const x = Math.round(screen.x + screen.width / 2 - width / 2)
   const y = Math.round(screen.y + screen.height + LABEL_GAP_PX)
+  const centerX = x + width / 2
+  const centerY = y + height / 2
+  context.save()
+  context.translate(centerX, centerY)
+  context.scale(scale, scale)
+  context.translate(-centerX, -centerY)
   context.fillStyle = colors.primary
   context.beginPath()
   context.roundRect(x, y, width, height, LABEL_RADIUS_PX)
   context.fill()
   context.fillStyle = colors.onPrimary
-  context.fillText(text, x + width / 2, y + height / 2)
+  context.fillText(text, centerX, centerY)
+  context.restore()
 }
 
 function strokePixelRect(context: CanvasRenderingContext2D, rect: Rect): void {

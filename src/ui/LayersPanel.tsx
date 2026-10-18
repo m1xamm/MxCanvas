@@ -37,6 +37,10 @@ export function LayersPanel() {
   const [dropTarget, setDropTarget] = useState<DropTarget | null>(null)
 
   const order = displayOrder(scene.getRootChildren())
+  const knownIdsRef = useRef<Set<NodeId> | null>(null)
+  const tracked = trackFreshIds(knownIdsRef.current, order)
+  knownIdsRef.current = tracked.known
+  const freshIds = tracked.fresh
   const rowCount = order.length
   const rows = virtualWindow({ scrollTop, viewportHeight, rowCount })
   const visibleIds = order.slice(rows.start, rows.end)
@@ -119,6 +123,7 @@ export function LayersPanel() {
                   order={order}
                   selected={selection.includes(id)}
                   renaming={renamingId === id}
+                  fresh={freshIds.has(id)}
                   onRenameStart={setRenamingId}
                   onRenameCommit={handleRenameCommit}
                   onRenameCancel={() => setRenamingId(null)}
@@ -149,3 +154,22 @@ export function LayersPanel() {
 function dropIndicatorTop(boundary: number): number {
   return Math.max(0, boundary * LAYER_ROW_PITCH - DROP_INDICATOR_OFFSET_PX)
 }
+
+function trackFreshIds(
+  known: Set<NodeId> | null,
+  order: readonly NodeId[],
+): { known: Set<NodeId>; fresh: ReadonlySet<NodeId> } {
+  if (known === null) return { known: new Set(order), fresh: EMPTY_IDS }
+  const fresh = new Set<NodeId>()
+  for (const id of order) {
+    if (!known.has(id)) fresh.add(id)
+    known.add(id)
+  }
+  const present = new Set(order)
+  for (const id of [...known]) {
+    if (!present.has(id)) known.delete(id)
+  }
+  return { known, fresh }
+}
+
+const EMPTY_IDS: ReadonlySet<NodeId> = new Set<NodeId>()
