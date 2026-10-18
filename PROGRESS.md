@@ -54,3 +54,15 @@
 - Zoom menu: percentage dropdown with Zoom in (Ctrl+=), Zoom out (Ctrl+-), 100% (Shift+0), Fit (Shift+1) and Selection (Shift+2); pure fitBounds math sets the viewport so the bounds fit the free area between the sidebars with 64px padding, an empty document falls back to 100%.
 - Handles: 10px circles in screen space with a white fill and a 1.5px accent border; the hovered handle grows to 1.25x over 120ms, animated by the renderer inside requestAnimationFrame.
 - Tests: 205 passing (nudge merging, viewport fit math, toolbar group state and disabled tools, zoom hotkeys, handle hover tracking, plus the Stage 3 suites). Not verified live: the docked layout, popup menus and handle hover animation (no browser connected to the session).
+
+## Stage 4.1 — Visual polish
+
+- Screenshots: playwright devDependency + scripts/shots.mjs, `npm run shots` boots Vite and drives Chromium at 1440x900 deviceScaleFactor 2 (ru-RU) writing 12 PNGs to .shots/ (gitignored): initial, selected rectangle, hovered handle, main menu, settings dialog, zoom menu, all five tool flyouts and a narrow 1100x700 initial view.
+- Shadows: every box-shadow/drop-shadow is gone and the --shadow-overlay token with it; popups and the dialog rely on tone only.
+- Popups: src/ui/Popup.tsx renders into a document.body portal with fixed positioning, 8px anchor gap and window margin; flip/clamp math lives in src/ui/popup-position.ts as pure functions; 150ms fade+scale from the anchor's transform-origin, outside pointerdown and Escape close, focus enters the first enabled item and returns to the trigger, ArrowUp/Down/Home/End cycle items.
+- Menu look: MenuItem rows (36px, 12px padding, 20px icon column, left label with ellipsis, right dim 11px hotkey, 200px min width) inside a vertical Cluster; the main menu, the zoom menu and all tool flyouts share the same rows; zoom items stay icon-free like Figma.
+- Control states: one model for every control — hover 8% and pressed 12% via ::after state layers, focus-visible 2px primary ring with a 2px offset, disabled 38%, active controls in the primary container pill; browser button styles reset.
+- Geometry, type and chrome: 4px spacing grid, 20px icons at 1.8 stroke in the 24px viewBox, the toolbar chevron badge sits in a 12px surface notch, Inter/system-ui stack with 12/16 and 11/14 type tokens, fixed line-heights and ellipsis, user-select none except inputs and textareas, thin themed scrollbars, no drag ghost.
+- Motion: only transform/opacity transitions plus the pill radius transition AGENTS.md requires, durations from tokens.
+- Fixed live with the screenshots: popups were clipped inside the sidebar before the portal, the first item kept the trigger focused until the placement was known, and the shots script now waits for the settled popup before clicking menu items.
+- Tests: 214 passing (9 new for popup placement).
