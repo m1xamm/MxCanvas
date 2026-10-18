@@ -3,9 +3,9 @@ import type { MessageKey } from '../i18n/i18n'
 import { useTranslation } from '../i18n/use-i18n'
 import { viewportActions, type ViewportActions } from '../app/viewport-actions'
 import { formatZoomPercent } from './format-zoom'
-import { Cluster } from './Cluster'
 import { ChevronIcon } from './icons'
-import { useDismiss } from './use-dismiss'
+import { MenuItem } from './MenuItem'
+import { Popup } from './Popup'
 
 interface ZoomMenuItem {
   key: MessageKey
@@ -28,17 +28,17 @@ export interface ZoomMenuProps {
 export function ZoomMenu({ zoom }: ZoomMenuProps) {
   const t = useTranslation()
   const [open, setOpen] = useState(false)
-  const rootRef = useRef<HTMLDivElement | null>(null)
-  useDismiss(open, () => setOpen(false), rootRef)
+  const buttonRef = useRef<HTMLButtonElement | null>(null)
 
   return (
-    <div class="zoom-menu" ref={rootRef}>
+    <div class="zoom-menu">
       <button
         type="button"
         class="control zoom-menu__button"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={t('zoomLabel')}
+        ref={buttonRef}
         onClick={() => setOpen((value) => !value)}
       >
         <span class="zoom-readout" aria-live="polite">
@@ -46,30 +46,27 @@ export function ZoomMenu({ zoom }: ZoomMenuProps) {
         </span>
         <ChevronIcon />
       </button>
-      {open && (
-        <Cluster
-          direction="vertical"
-          role="menu"
-          class="menu-popup menu-popup--right zoom-menu__popup"
-        >
-          {ZOOM_ITEMS.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              role="menuitem"
-              class="control menu-item menu-item--tool"
-              onClick={() => {
-                const actions = viewportActions()
-                if (actions) item.run(actions)
-                setOpen(false)
-              }}
-            >
-              <span>{t(item.key)}</span>
-              <span class="menu-item__hotkey">{item.hotkey}</span>
-            </button>
-          ))}
-        </Cluster>
-      )}
+      <Popup
+        open={open}
+        anchorRef={buttonRef}
+        side="below"
+        align="end"
+        ariaLabel={t('zoomLabel')}
+        onClose={() => setOpen(false)}
+      >
+        {ZOOM_ITEMS.map((item) => (
+          <MenuItem
+            key={item.key}
+            label={t(item.key)}
+            hotkey={item.hotkey}
+            onClick={() => {
+              const actions = viewportActions()
+              if (actions) item.run(actions)
+              setOpen(false)
+            }}
+          />
+        ))}
+      </Popup>
     </div>
   )
 }

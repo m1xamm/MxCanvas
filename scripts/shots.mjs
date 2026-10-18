@@ -51,6 +51,11 @@ async function drawRectangle(page) {
   await page.mouse.up()
 }
 
+async function openPopup(page, trigger) {
+  await trigger.click()
+  await page.locator('.popup.is-open').waitFor()
+}
+
 async function runShots(page) {
   await capture(page, 'initial')
 
@@ -63,21 +68,21 @@ async function runShots(page) {
   await capture(page, 'handle-hovered')
   await page.mouse.move(680, 120)
 
-  await page.locator('.menu-button').click()
+  await openPopup(page, page.locator('.menu-button'))
   await capture(page, 'main-menu-open')
   await page.keyboard.press('Escape')
 
-  await page.locator('.menu-button').click()
+  await openPopup(page, page.locator('.menu-button'))
   await page.locator('.menu-item', { hasText: 'Настройки' }).click()
   await capture(page, 'settings-dialog')
   await page.keyboard.press('Escape')
 
-  await page.locator('.zoom-menu__button').click()
+  await openPopup(page, page.locator('.zoom-menu__button'))
   await capture(page, 'zoom-menu-open')
   await page.keyboard.press('Escape')
 
   for (const [index, group] of TOOLBAR_GROUPS.entries()) {
-    await page.locator('.tool-group__chevron').nth(index).click()
+    await openPopup(page, page.locator('.tool-group__chevron').nth(index))
     await capture(page, `toolbar-${group}`)
     await page.keyboard.press('Escape')
   }

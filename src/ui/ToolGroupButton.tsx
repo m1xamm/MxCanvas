@@ -1,9 +1,9 @@
 import { useRef, useState } from 'preact/hooks'
 import { toolDefinition, type ToolGroup, type ToolId } from '../interaction/tools'
 import { useTranslation } from '../i18n/use-i18n'
-import { Cluster } from './Cluster'
 import { ChevronIcon, TOOL_ICONS } from './icons'
-import { useDismiss } from './use-dismiss'
+import { MenuItem } from './MenuItem'
+import { Popup } from './Popup'
 
 export interface ToolGroupButtonProps {
   group: ToolGroup
@@ -15,8 +15,7 @@ export interface ToolGroupButtonProps {
 export function ToolGroupButton({ group, tool, activeTool, onSelectTool }: ToolGroupButtonProps) {
   const t = useTranslation()
   const [open, setOpen] = useState(false)
-  const rootRef = useRef<HTMLDivElement | null>(null)
-  useDismiss(open, () => setOpen(false), rootRef)
+  const groupRef = useRef<HTMLDivElement | null>(null)
 
   const definition = toolDefinition(tool)
   const isActive = group.tools.includes(activeTool)
@@ -24,7 +23,7 @@ export function ToolGroupButton({ group, tool, activeTool, onSelectTool }: ToolG
   const label = t(`tools.${tool}`)
 
   return (
-    <div class={isActive ? 'tool-group is-active' : 'tool-group'} ref={rootRef}>
+    <div class={isActive ? 'tool-group is-active' : 'tool-group'} ref={groupRef}>
       <button
         type="button"
         class="control tool-group__main"
@@ -46,30 +45,31 @@ export function ToolGroupButton({ group, tool, activeTool, onSelectTool }: ToolG
       >
         <ChevronIcon />
       </button>
-      {open && (
-        <Cluster direction="vertical" class="menu-popup menu-popup--above" role="menu">
-          {group.tools.map((id) => {
-            const item = toolDefinition(id)
-            const itemLabel = t(`tools.${id}`)
-            return (
-              <button
-                key={id}
-                type="button"
-                role="menuitem"
-                class="control menu-item menu-item--tool"
-                disabled={!item.available}
-                onClick={() => {
-                  setOpen(false)
-                  onSelectTool(id)
-                }}
-              >
-                <span>{itemLabel}</span>
-                {item.hotkey && <span class="menu-item__hotkey">{item.hotkey}</span>}
-              </button>
-            )
-          })}
-        </Cluster>
-      )}
+      <Popup
+        open={open}
+        anchorRef={groupRef}
+        side="above"
+        align="center"
+        ariaLabel={t('toolGroupMenu')}
+        onClose={() => setOpen(false)}
+      >
+        {group.tools.map((id) => {
+          const item = toolDefinition(id)
+          return (
+            <MenuItem
+              key={id}
+              icon={TOOL_ICONS[id]}
+              label={t(`tools.${id}`)}
+              hotkey={item.hotkey}
+              disabled={!item.available}
+              onClick={() => {
+                setOpen(false)
+                onSelectTool(id)
+              }}
+            />
+          )
+        })}
+      </Popup>
     </div>
   )
 }

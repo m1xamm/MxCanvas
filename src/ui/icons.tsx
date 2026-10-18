@@ -1,15 +1,18 @@
 import type { ComponentChildren, JSX } from 'preact'
 import type { ToolId } from '../interaction/tools'
 
+const ICON_SIZE_PX = 20
+const ICON_STROKE_WIDTH = 1.8
+
 function IconBase({ children }: { children: ComponentChildren }) {
   return (
     <svg
-      width="24"
-      height="24"
+      width={ICON_SIZE_PX}
+      height={ICON_SIZE_PX}
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      stroke-width="1.5"
+      stroke-width={ICON_STROKE_WIDTH}
       stroke-linecap="round"
       stroke-linejoin="round"
       aria-hidden="true"
@@ -180,6 +183,15 @@ export function CloseIcon() {
   return (
     <IconBase>
       <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />
+    </IconBase>
+  )
+}
+
+export function SettingsIcon() {
+  return (
+    <IconBase>
+      <circle cx="12" cy="12" r="4.6" />
+      <path d="M16.4 12h2.6M7.6 12H5M12 7.6V5M12 16.4V19M15.11 8.89l1.84-1.84M8.89 8.89 7.05 7.05M15.11 15.11l1.84 1.84M8.89 15.11l-1.84 1.84" />
     </IconBase>
   )
 }
