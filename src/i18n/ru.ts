@@ -15,6 +15,7 @@ export const ru: Dictionary = {
   noLayers: 'Пока нет слоев',
   noAssets: 'Пока нет ресурсов',
   languageLabel: 'Язык',
+  canvasGridLabel: 'Сетка на холсте',
   languages: {
     ru: 'Русский',
     en: 'English',

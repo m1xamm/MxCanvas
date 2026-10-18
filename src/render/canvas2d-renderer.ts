@@ -1,6 +1,7 @@
 import { DEFAULT_RECTANGLE_FILL } from '../core/document/create-node'
 import type { NodeId, SceneNodeUnion, SceneReader, SolidPaint } from '../core/document/types'
-import { multiply, scaling, type Mat2D } from '../core/math/matrix'
+import { canvasGrid } from '../core/canvas-grid'
+import { applyToPoint, multiply, scaling, type Mat2D } from '../core/math/matrix'
 import { transformRect, type Rect } from '../core/math/rect'
 import { boxWorldTransform, type NodeBox } from '../core/transform'
 import type { Viewport } from '../core/viewport'
@@ -27,6 +28,7 @@ export interface Canvas2DRendererOptions {
   getPreviews?: () => ReadonlyMap<NodeId, NodeBox>
   getSelectionBounds?: () => Rect | null
   getDraft?: () => Rect | null
+  isGridVisible?: () => boolean
 }
 
 export class Canvas2DRenderer implements Renderer {
@@ -41,6 +43,7 @@ export class Canvas2DRenderer implements Renderer {
   #getPreviews: () => ReadonlyMap<NodeId, NodeBox>
   #getSelectionBounds: () => Rect | null
   #getDraft: () => Rect | null
+  #isGridVisible: () => boolean
   #colors: ThemeColors
   #devicePixelRatio = 1
   #cssWidth = 1
@@ -66,6 +69,7 @@ export class Canvas2DRenderer implements Renderer {
     this.#getPreviews = options.getPreviews ?? (() => new Map())
     this.#getSelectionBounds = options.getSelectionBounds ?? (() => null)
     this.#getDraft = options.getDraft ?? (() => null)
+    this.#isGridVisible = options.isGridVisible ?? (() => false)
     this.#colors = readThemeColors()
   }
 
@@ -102,6 +106,7 @@ export class Canvas2DRenderer implements Renderer {
       scaling(this.#devicePixelRatio, this.#devicePixelRatio),
       this.#viewport.matrix(),
     )
+    this.#drawGrid(deviceViewport)
     for (const node of collectVisibleNodes(this.#scene, this.#viewportWorldBounds(), this.#visibleNodes)) {
       this.#drawNode(node, deviceViewport)
     }
@@ -130,6 +135,27 @@ export class Canvas2DRenderer implements Renderer {
     const elapsed = time - this.#hoverStartedAt
     if (elapsed < HANDLE_HOVER_DURATION_MS) this.requestRender()
     return handleHoverScale(elapsed)
+  }
+
+  #drawGrid(deviceViewport: Mat2D): void {
+    if (!this.#isGridVisible()) return
+    const grid = canvasGrid(this.#viewportWorldBounds(), this.#viewport.zoom)
+    if (grid.columns === 0 || grid.rows === 0) return
+    const context = this.#context
+    const origin = applyToPoint(deviceViewport, { x: grid.firstX, y: grid.firstY })
+    const spacing = grid.step * this.#viewport.zoom * this.#devicePixelRatio
+    const dotSize = this.#devicePixelRatio
+    context.fillStyle = this.#colors.canvasGridDot
+    context.globalAlpha = grid.alpha
+    context.beginPath()
+    for (let row = 0; row < grid.rows; row += 1) {
+      const y = Math.round(origin.y + row * spacing)
+      for (let column = 0; column < grid.columns; column += 1) {
+        context.rect(Math.round(origin.x + column * spacing), y, dotSize, dotSize)
+      }
+    }
+    context.fill()
+    context.globalAlpha = 1
   }
 
   #drawNode(node: SceneNodeUnion, deviceViewport: Mat2D): void {

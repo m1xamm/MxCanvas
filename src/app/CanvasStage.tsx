@@ -8,6 +8,7 @@ import { selectionStore, setSelection } from '../interaction/selection'
 import type { ToolId } from '../interaction/tools'
 import { Canvas2DRenderer } from '../render/canvas2d-renderer'
 import { createRectangle, deleteSelection, history, moveSelection, nudgeSelection, resizeSelection, scene } from './editor'
+import { isCanvasGridVisible, subscribeCanvasGrid } from './settings'
 import { observeDevicePixelRatio } from './observe-device-pixel-ratio'
 import { readViewportArea } from './viewport-area'
 import { setViewportActions } from './viewport-actions'
@@ -46,6 +47,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       getPreviews: () => controller?.previews ?? NO_PREVIEWS,
       getSelectionBounds: () => controller?.selectionBounds ?? null,
       getDraft: () => controller?.draft ?? null,
+      isGridVisible: isCanvasGridVisible,
     })
     const createdController = new CanvasController(canvas, viewport, {
       initialTool: tool,
@@ -92,6 +94,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
     })
     const unsubscribeScene = scene.subscribe(() => renderer.requestRender())
     const unsubscribeSelection = selectionStore.subscribe(() => renderer.requestRender())
+    const unsubscribeCanvasGrid = subscribeCanvasGrid(() => renderer.requestRender())
     const stopObservingDpr = observeDevicePixelRatio(resize)
     const resizeObserver = new ResizeObserver(resize)
     resizeObserver.observe(container)
@@ -103,6 +106,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       unsubscribeViewport()
       unsubscribeScene()
       unsubscribeSelection()
+      unsubscribeCanvasGrid()
       setViewportActions(null)
       createdController.dispose()
       renderer.dispose()

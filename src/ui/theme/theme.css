@@ -2,6 +2,7 @@
   color-scheme: dark;
 
   --color-canvas: #1e1e1e;
+  --color-canvas-grid-dot: #333333;
   --color-surface-dim: #242424;
   --color-surface: #2c2c2c;
   --color-surface-container: #333333;
@@ -46,4 +47,11 @@
 
   --panel-width: 240px;
   --toolbar-button-size: 40px;
+
+  --radius-row: 12px;
+  --switch-width: 40px;
+  --switch-height: 22px;
+  --switch-thumb-size: 16px;
+  --switch-thumb-inset: 3px;
+  --switch-thumb-travel: 18px;
 }

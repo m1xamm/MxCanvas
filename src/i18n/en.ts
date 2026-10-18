@@ -13,6 +13,7 @@ export const en = {
   noLayers: 'No layers yet',
   noAssets: 'No assets yet',
   languageLabel: 'Language',
+  canvasGridLabel: 'Canvas grid',
   languages: {
     ru: 'Русский',
     en: 'English',

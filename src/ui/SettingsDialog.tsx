@@ -1,9 +1,12 @@
 import { useEffect, useRef } from 'preact/hooks'
+import { canvasGridStore, setCanvasGridVisible } from '../app/settings'
+import { useStoreValue } from '../app/use-store-value'
 import { LANGUAGES, setLanguage } from '../i18n/i18n'
 import { useLanguage, useTranslation } from '../i18n/use-i18n'
 import { Cluster } from './Cluster'
 import { collectFocusable, nextFocusIndex } from './focus-trap'
 import { CloseIcon } from './icons'
+import { Switch } from './Switch'
 
 const ESCAPE_KEY_CODE = 'Escape'
 const TAB_KEY_CODE = 'Tab'
@@ -15,6 +18,7 @@ export interface SettingsDialogProps {
 export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const t = useTranslation()
   const language = useLanguage()
+  const canvasGridVisible = useStoreValue(canvasGridStore)
   const cardRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -87,6 +91,14 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
                 </button>
               ))}
             </Cluster>
+          </div>
+          <div class="dialog-row">
+            <span class="dialog-label">{t('canvasGridLabel')}</span>
+            <Switch
+              checked={canvasGridVisible}
+              label={t('canvasGridLabel')}
+              onChange={setCanvasGridVisible}
+            />
           </div>
         </Cluster>
       </div>

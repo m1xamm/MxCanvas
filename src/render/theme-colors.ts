@@ -1,4 +1,5 @@
 const FALLBACK_CANVAS_COLOR = '#1e1e1e'
+const FALLBACK_CANVAS_GRID_DOT_COLOR = '#333333'
 const FALLBACK_PRIMARY_COLOR = '#0d99ff'
 const FALLBACK_ON_SURFACE_COLOR = '#ffffff'
 const FALLBACK_ON_PRIMARY_COLOR = '#ffffff'
@@ -7,6 +8,7 @@ const MARQUEE_FILL_ALPHA = 0.1
 
 export interface ThemeColors {
   canvas: string
+  canvasGridDot: string
   primary: string
   onSurface: string
   onPrimary: string
@@ -19,6 +21,7 @@ export function readThemeColors(): ThemeColors {
   const primary = readToken(styles, '--color-primary') ?? FALLBACK_PRIMARY_COLOR
   return {
     canvas: readToken(styles, '--color-canvas') ?? FALLBACK_CANVAS_COLOR,
+    canvasGridDot: readToken(styles, '--color-canvas-grid-dot') ?? FALLBACK_CANVAS_GRID_DOT_COLOR,
     primary,
     onSurface: readToken(styles, '--color-on-surface') ?? FALLBACK_ON_SURFACE_COLOR,
     onPrimary: readToken(styles, '--color-on-primary') ?? FALLBACK_ON_PRIMARY_COLOR,
