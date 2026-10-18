@@ -84,3 +84,5 @@
 - Task 2: logos moved to src/assets/logo-light.svg (used in the dark UI) and logo-dark.svg, page title and two prefers-color-scheme favicon links; all icons replaced by vendored Material Symbols Rounded SVGs in src/ui/icons with one semantic map and one Icon component (filled variants for active tools, hidden layers and locked layers); old inline icon modules deleted.
 - Task 3: pixel grid math (src/core/pixel-grid.ts) draws 1 device pixel lines on world integers from 400% zoom, easing in until 800%, one batched snapped path with the new --color-canvas-pixel-grid token; Settings row «Пиксельная сетка» persisted in localStorage and Ctrl+' (Code Quote) toggles it; tests for the math and the hotkey.
 
+- Task 4 (part 1): pure color math (hex/rgb/hsv, paint cloning, css strings) and the safe number expression parser with formatting, both tested.
+
