@@ -49,7 +49,7 @@ Rules:
 Figma UI3 layout, Material 3 Expressive look, dark gray theme.
 Shape tokens in theme.css: --radius-outer: 22px, --radius-seam: 4px, --gap-cluster: 4px, --gap-screen: 8px.
 Cluster pattern: related blocks sit in a cluster of separate tonal blocks 4px apart. The cluster's outer corners are 22px, corners where two blocks touch are 4px. One reusable `Cluster` (CSS utility + Preact component, horizontal and vertical) sets radii by position (first/middle/last/only). Use it for: toolbar buttons, left panel blocks, right panel sections (Position, Layout, Appearance, Fill, Stroke, Effects, Export), property rows, segmented controls.
-Panels float 8px from the window edges. No 1px borders, no divider lines: separation is only the 4px gap and tone difference. Elevation is tonal; shadows only for popups and menus.
+Panels float 8px from the window edges. No 1px borders, no divider lines: separation is only the 4px gap and tone difference. No shadows anywhere (no box-shadow, no drop-shadow). Elevation is tonal only.
 Active controls: primary container tone and pill shape (radius transition). Motion 150-250ms, emphasized easing.
 All colors, spacing, radii, typography and motion come from CSS variables in src/ui/theme. Never hardcode them. Icons are our own inline SVG components.
 
@@ -72,6 +72,7 @@ When unsure how something should behave, copy Figma. Hotkeys: V move, R rectangl
 - Reply ONLY in Russian: chat messages, questions and the final report. Never switch to Chinese or any other language. Code and i18n keys stay English.
 - Do not rush. Do exactly what the stage prompt says, no more, no less. Before the report, re-read the stage prompt and verify every task item is really implemented; list every skipped or partial item under "Broken or deviating".
 - If the prompt does not say where a control or screen belongs, ask instead of guessing. Settings-type controls (language and similar) never go on the main screen.
+- Every UI change must be checked visually: run `npm run shots`, open the PNGs in .shots/ and look at them before the report. If you cannot view images, say so.
 
 ## Report format (end of EVERY stage, in Russian)
 The report is read by another AI to plan the next stage. Max 30 lines. No fluff, no repeating the task, no restating unchanged code.
