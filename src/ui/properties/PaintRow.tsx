@@ -1,30 +1,40 @@
+import type { ComponentChildren } from 'preact'
 import { useRef, useState } from 'preact/hooks'
 import { hexToRgb, rgbToHex, withAlphaColor } from '../../core/color'
-import type { FillSummary } from '../../core/fills'
+import type { PaintSummary } from '../../core/paints'
 import type { RgbColor } from '../../core/document/types'
+import type { MessageKey } from '../../i18n/i18n'
 import { useTranslation } from '../../i18n/use-i18n'
 import { Cluster } from '../Cluster'
 import { Icon } from '../Icon'
 import { ColorPicker } from './ColorPicker'
 import { NumberField } from './NumberField'
 
-export interface FillRowProps {
-  summary: FillSummary
+export interface PaintRowProps {
+  summary: PaintSummary
+  colorLabel: MessageKey
+  removeLabel: MessageKey
+  toggleLabel: MessageKey
   onColorChange: (color: RgbColor, live: boolean) => void
   onOpacityChange: (opacity: number, live: boolean) => void
   onVisibleChange: (visible: boolean) => void
   onRemove: () => void
   onHexChange: (color: RgbColor) => void
+  middle: ComponentChildren
 }
 
-export function FillRow({
+export function PaintRow({
   summary,
+  colorLabel,
+  removeLabel,
+  toggleLabel,
   onColorChange,
   onOpacityChange,
   onVisibleChange,
   onRemove,
   onHexChange,
-}: FillRowProps) {
+  middle,
+}: PaintRowProps) {
   const t = useTranslation()
   const [pickerOpen, setPickerOpen] = useState(false)
   const swatchRef = useRef<HTMLButtonElement | null>(null)
@@ -32,12 +42,12 @@ export function FillRow({
   const visible = summary.mixedVisible ? false : paint.visible
 
   return (
-    <Cluster class="fill-row">
+    <Cluster class="paint-row">
       <button
         type="button"
         ref={swatchRef}
-        class="control fill-swatch"
-        aria-label={t('fillColorLabel')}
+        class="control paint-swatch"
+        aria-label={t(colorLabel)}
         aria-expanded={pickerOpen}
         style={{ background: withAlphaColor(paint.color, paint.opacity) }}
         onClick={() => setPickerOpen((value) => !value)}
@@ -56,23 +66,16 @@ export function FillRow({
           }}
         />
       </label>
-      <NumberField
-        value={summary.mixedOpacity ? null : Math.round(paint.opacity * 100)}
-        suffix="%"
-        min={0}
-        max={100}
-        title={t('opacityLabel')}
-        onChange={(value, live) => onOpacityChange(value / 100, live)}
-      />
+      {middle}
       <button
         type="button"
-        class={visible ? 'control fill-action' : 'control fill-action is-off'}
-        aria-label={t('toggleFillVisibility')}
+        class={visible ? 'control paint-action' : 'control paint-action is-off'}
+        aria-label={t(toggleLabel)}
         onClick={() => onVisibleChange(!visible)}
       >
         <Icon name={visible ? 'visibility' : 'visibilityOff'} size={16} />
       </button>
-      <button type="button" class="control fill-action" aria-label={t('removeFill')} onClick={onRemove}>
+      <button type="button" class="control paint-action" aria-label={t(removeLabel)} onClick={onRemove}>
         <Icon name="remove" size={16} />
       </button>
       {pickerOpen && (
@@ -88,5 +91,25 @@ export function FillRow({
         />
       )}
     </Cluster>
+  )
+}
+
+export function PaintOpacityField({
+  summary,
+  onChange,
+}: {
+  summary: PaintSummary
+  onChange: (opacity: number, live: boolean) => void
+}) {
+  const t = useTranslation()
+  return (
+    <NumberField
+      value={summary.mixedOpacity ? null : Math.round(summary.paint.opacity * 100)}
+      suffix="%"
+      min={0}
+      max={100}
+      title={t('opacityLabel')}
+      onChange={(value, live) => onChange(value / 100, live)}
+    />
   )
 }

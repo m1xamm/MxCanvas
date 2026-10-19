@@ -1,5 +1,5 @@
 import type { Document } from '../document/document'
-import type { NodeId, Paint, RectangleNode } from '../document/types'
+import type { NodeId, Paint, SceneNodeUnion } from '../document/types'
 import { clonePaints } from '../color'
 import type { Command } from './command'
 import { applyNodePropertyChanges, mergeNodePropertyChanges, type NodePropertyChange } from './node-property-change'
@@ -27,7 +27,7 @@ export class SetFillsCommand implements Command {
   static forNodes(
     document: Document,
     ids: readonly NodeId[],
-    fills: (node: RectangleNode) => Paint[],
+    fills: (node: SceneNodeUnion) => Paint[],
     options: { mergeable?: boolean } = {},
   ): SetFillsCommand | null {
     const changes: NodePropertyChange<Paint[]>[] = []

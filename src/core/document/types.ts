@@ -32,11 +32,13 @@ export interface SceneNode {
   locked: boolean
   opacity: number
   constrainProportions: boolean
+  fills: Paint[]
+  strokes: Paint[]
+  strokeWeight: number
 }
 
 export interface RectangleNode extends SceneNode {
   type: 'rectangle'
-  fills: Paint[]
   cornerRadius: number
 }
 

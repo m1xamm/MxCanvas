@@ -1,4 +1,4 @@
-import { DEFAULT_RECTANGLE_FILL } from '../core/document/create-node'
+import { DEFAULT_FILL } from '../core/document/create-node'
 import type { NodeId, SceneNodeUnion, SceneReader } from '../core/document/types'
 import { canvasGrid } from '../core/canvas-grid'
 import { paintToCss } from '../core/color'
@@ -203,6 +203,14 @@ export class Canvas2DRenderer implements Renderer {
       context.fillStyle = paintToCss(paint)
       context.fill()
     }
+    if (node.strokeWeight > 0) {
+      context.lineWidth = node.strokeWeight
+      for (const paint of node.strokes) {
+        if (!paint.visible) continue
+        context.strokeStyle = paintToCss(paint)
+        context.stroke()
+      }
+    }
     context.globalAlpha = 1
   }
 
@@ -258,7 +266,7 @@ export class Canvas2DRenderer implements Renderer {
     const context = this.#context
     this.#applyTransform(deviceViewport)
     context.globalAlpha = DRAFT_FILL_ALPHA
-    context.fillStyle = paintToCss(DEFAULT_RECTANGLE_FILL)
+    context.fillStyle = paintToCss(DEFAULT_FILL)
     context.beginPath()
     context.rect(draft.x, draft.y, draft.width, draft.height)
     context.fill()

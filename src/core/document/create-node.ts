@@ -1,12 +1,21 @@
 import { translation } from '../math/matrix'
 import type { NodeId, RectangleNode, SolidPaint } from './types'
 
-export const DEFAULT_RECTANGLE_FILL: SolidPaint = {
+export const DEFAULT_FILL: SolidPaint = {
   type: 'solid',
   color: { r: 217, g: 217, b: 217 },
   opacity: 1,
   visible: true,
 }
+
+export const DEFAULT_STROKE: SolidPaint = {
+  type: 'solid',
+  color: { r: 0, g: 0, b: 0 },
+  opacity: 1,
+  visible: true,
+}
+
+export const DEFAULT_STROKE_WEIGHT = 1
 
 export interface RectangleNodeInit {
   id: NodeId
@@ -32,7 +41,9 @@ export function createRectangleNode(init: RectangleNodeInit): RectangleNode {
     locked: false,
     opacity: 1,
     constrainProportions: false,
-    fills: [{ ...DEFAULT_RECTANGLE_FILL, color: { ...DEFAULT_RECTANGLE_FILL.color } }],
+    fills: [{ ...DEFAULT_FILL, color: { ...DEFAULT_FILL.color } }],
+    strokes: [],
+    strokeWeight: DEFAULT_STROKE_WEIGHT,
     cornerRadius: 0,
   }
 }

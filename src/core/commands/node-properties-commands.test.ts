@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { History } from '../history'
-import { Document } from '../document/document'
+import { Document, MAX_STROKE_WEIGHT } from '../document/document'
 import { createRectangleNode } from '../document/create-node'
 import type { Paint, RectangleNode } from '../document/types'
 import { SetConstrainProportionsCommand } from './set-constrain-proportions-command'
 import { SetCornerRadiusCommand } from './set-corner-radius-command'
 import { SetFillsCommand } from './set-fills-command'
 import { SetOpacityCommand } from './set-opacity-command'
+import { SetStrokeWeightCommand } from './set-stroke-weight-command'
+import { SetStrokesCommand } from './set-strokes-command'
 
 function scene(...nodes: RectangleNode[]): Document {
   const document = new Document()
@@ -137,6 +139,66 @@ describe('SetCornerRadiusCommand', () => {
     expect(first.mergeWith(second)).toBe(true)
     first.execute()
     expect(document.getNode('a')?.cornerRadius).toBe(12)
+  })
+})
+
+describe('SetStrokesCommand', () => {
+  it('adds a stroke and restores the empty list on undo', () => {
+    const document = scene(rectangle('a'))
+    const command = SetStrokesCommand.forNodes(document, ['a'], () => [solid(0)])
+    command?.execute()
+    expect(document.getNode('a')?.strokes).toEqual([solid(0)])
+    command?.undo()
+    expect(document.getNode('a')?.strokes).toEqual([])
+  })
+
+  it('does not share paint objects with the document', () => {
+    const document = scene(rectangle('a'))
+    const strokes = [solid(10)]
+    SetStrokesCommand.forNodes(document, ['a'], () => strokes)?.execute()
+    strokes[0]!.color.r = 200
+    expect(document.getNode('a')?.strokes[0]?.color.r).toBe(10)
+  })
+
+  it('merges continuations into one command', () => {
+    const document = scene(rectangle('a'))
+    const first = SetStrokesCommand.forNodes(document, ['a'], () => [solid(1)], { mergeable: true })!
+    const second = SetStrokesCommand.forNodes(document, ['a'], () => [solid(2)], { mergeable: true })!
+    expect(first.mergeWith(second)).toBe(true)
+    first.execute()
+    expect(document.getNode('a')?.strokes).toEqual([solid(2)])
+    first.undo()
+    expect(document.getNode('a')?.strokes).toEqual([])
+  })
+})
+
+describe('SetStrokeWeightCommand', () => {
+  it('sets and restores the weight through history', () => {
+    const document = scene(rectangle('a'))
+    const history = new History()
+    history.execute(SetStrokeWeightCommand.forNodes(document, ['a'], 6)!)
+    expect(document.getNode('a')?.strokeWeight).toBe(6)
+    history.undo()
+    expect(document.getNode('a')?.strokeWeight).toBe(1)
+    history.redo()
+    expect(document.getNode('a')?.strokeWeight).toBe(6)
+  })
+
+  it('clamps the weight into the allowed range', () => {
+    const document = scene(rectangle('a'))
+    SetStrokeWeightCommand.forNodes(document, ['a'], 5000)!.execute()
+    expect(document.getNode('a')?.strokeWeight).toBe(MAX_STROKE_WEIGHT)
+    SetStrokeWeightCommand.forNodes(document, ['a'], -4)!.execute()
+    expect(document.getNode('a')?.strokeWeight).toBe(0)
+  })
+
+  it('merges continuations', () => {
+    const document = scene(rectangle('a'))
+    const first = SetStrokeWeightCommand.forNodes(document, ['a'], 2, { mergeable: true })!
+    const second = SetStrokeWeightCommand.forNodes(document, ['a'], 8, { mergeable: true })!
+    expect(first.mergeWith(second)).toBe(true)
+    first.execute()
+    expect(document.getNode('a')?.strokeWeight).toBe(8)
   })
 })
 

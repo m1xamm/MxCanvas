@@ -20,6 +20,8 @@ function createRectangle(id: string, parentId: NodeId | null = null): RectangleN
     locked: false,
     opacity: 1,
     constrainProportions: false,
+    strokes: [],
+    strokeWeight: 0,
     fills: [],
     cornerRadius: 0,
   }

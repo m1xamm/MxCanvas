@@ -1,9 +1,11 @@
 import { selectionStore } from '../../interaction/selection'
 import {
   addSelectionFill,
+  addSelectionStroke,
   alignSelection,
   distributeSelection,
   removeSelectionFill,
+  removeSelectionStroke,
   scene,
   setSelectionConstrainProportions,
   setSelectionCornerRadius,
@@ -12,20 +14,25 @@ import {
   setSelectionFillOpacity,
   setSelectionFillVisible,
   setSelectionOpacity,
+  setSelectionStrokeColor,
+  setSelectionStrokeOpacity,
+  setSelectionStrokeVisible,
+  setSelectionStrokeWeight,
 } from '../../app/editor'
 import { useStoreValue } from '../../app/use-store-value'
 import { useSceneVersion } from '../../app/use-scene-version'
-import { summarizeFills } from '../../core/fills'
+import { summarizeFills, summarizeStrokes } from '../../core/paints'
 import type { AlignMode, DistributeMode } from '../../core/align'
 import { selectionNodes, selectionRect } from '../../core/selection-box'
-import type { RectangleNode, SceneNodeUnion } from '../../core/document/types'
+import { MAX_STROKE_WEIGHT } from '../../core/document/document'
+import type { SceneNodeUnion } from '../../core/document/types'
 import type { MessageKey } from '../../i18n/i18n'
 import { useTranslation } from '../../i18n/use-i18n'
 import { Cluster } from '../Cluster'
 import { Icon } from '../Icon'
 import type { IconName } from '../icons'
-import { FillRow } from './FillRow'
 import { NumberField } from './NumberField'
+import { PaintOpacityField, PaintRow } from './PaintRow'
 
 const MIN_SIZE = 1
 const MIN_ALIGN_COUNT = 2
@@ -66,7 +73,8 @@ export function PropertiesPanel() {
 
   const nodes = selectionNodes(scene, ids)
   const rect = selectionRect(scene, ids)
-  const fills = summarizeFills(nodes.filter(isRectangle))
+  const fills = summarizeFills(nodes)
+  const strokes = summarizeStrokes(nodes)
   const constrained = nodes.length > 0 && nodes.every((node) => node.constrainProportions)
 
   return (
@@ -192,14 +200,63 @@ export function PropertiesPanel() {
         </div>
         <Cluster direction="vertical">
           {fills.map((summary) => (
-            <FillRow
+            <PaintRow
               key={summary.row}
               summary={summary}
+              colorLabel="fillColorLabel"
+              removeLabel="removeFill"
+              toggleLabel="toggleFillVisibility"
               onColorChange={(color, live) => setSelectionFillColor(summary.row, color, live)}
               onOpacityChange={(opacity, live) => setSelectionFillOpacity(summary.row, opacity, live)}
               onVisibleChange={(visible) => setSelectionFillVisible(summary.row, visible)}
               onRemove={() => removeSelectionFill(summary.row)}
               onHexChange={(color) => setSelectionFillColor(summary.row, color)}
+              middle={
+                <PaintOpacityField
+                  summary={summary}
+                  onChange={(opacity, live) => setSelectionFillOpacity(summary.row, opacity, live)}
+                />
+              }
+            />
+          ))}
+        </Cluster>
+      </div>
+      <div class="block block--section">
+        <div class="section-head">
+          <span class="section-title">{t('sections.stroke')}</span>
+          <button
+            type="button"
+            class="control icon-button"
+            aria-label={t('addStroke')}
+            title={t('addStroke')}
+            onClick={addSelectionStroke}
+          >
+            <Icon name="add" size={16} />
+          </button>
+        </div>
+        <Cluster direction="vertical">
+          {strokes.map((summary) => (
+            <PaintRow
+              key={summary.row}
+              summary={summary}
+              colorLabel="strokeColorLabel"
+              removeLabel="removeStroke"
+              toggleLabel="toggleStrokeVisibility"
+              onColorChange={(color, live) => setSelectionStrokeColor(summary.row, color, live)}
+              onOpacityChange={(opacity, live) => setSelectionStrokeOpacity(summary.row, opacity, live)}
+              onVisibleChange={(visible) => setSelectionStrokeVisible(summary.row, visible)}
+              onRemove={() => removeSelectionStroke(summary.row)}
+              onHexChange={(color) => setSelectionStrokeColor(summary.row, color)}
+              middle={
+                summary.row === 0 ? (
+                  <StrokeWeightField nodes={nodes} onChange={setSelectionStrokeWeight} />
+                ) : (
+                  <PaintOpacityField
+                    summary={summary}
+                    onChange={(opacity, live) => setSelectionStrokeOpacity(summary.row, opacity, live)}
+                  />
+                )
+              }
             />
           ))}
         </Cluster>
@@ -208,8 +265,23 @@ export function PropertiesPanel() {
   )
 }
 
-function isRectangle(node: SceneNodeUnion): node is RectangleNode {
-  return node.type === 'rectangle'
+function StrokeWeightField({
+  nodes,
+  onChange,
+}: {
+  nodes: readonly SceneNodeUnion[]
+  onChange: (value: number, live: boolean) => void
+}) {
+  const t = useTranslation()
+  return (
+    <NumberField
+      value={uniformValue(nodes, (node) => node.strokeWeight)}
+      min={0}
+      max={MAX_STROKE_WEIGHT}
+      title={t('strokeWeightLabel')}
+      onChange={onChange}
+    />
+  )
 }
 
 function percentValue(

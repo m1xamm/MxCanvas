@@ -46,6 +46,12 @@ const SNAP_ANCHOR = { start: { x: 420, y: 300 }, end: { x: 560, y: 420 } }
 const SNAP_MOVED = { start: { x: 760, y: 480 }, end: { x: 900, y: 600 } }
 const SNAP_DRAG_OFFSET = { x: -336, y: -50 }
 
+const STROKE_RECT = { start: { x: 560, y: 320 }, end: { x: 860, y: 520 } }
+const STROKE_WEIGHT = '8'
+const STROKE_ADD_LABEL = 'Добавить обводку'
+const STROKE_WEIGHT_LABEL = 'Толщина обводки'
+const RIGHT_PANEL = '.side-panel--right'
+
 async function withPage(viewport, run) {
   const server = await createServer({ server: { port: 5199, strictPort: true } })
   await server.listen()
@@ -79,6 +85,12 @@ async function capture(page, name, zoomSteps = 0) {
 async function captureCrop(page, name, clip) {
   await page.waitForTimeout(SETTLE_MS)
   await page.screenshot({ path: `${OUTPUT_DIR}${name}.png`, clip })
+}
+
+async function captureElement(page, selector, name) {
+  const box = await page.locator(selector).boundingBox()
+  if (!box) return
+  await captureCrop(page, name, box)
 }
 
 async function parkPointer(page) {
@@ -240,7 +252,7 @@ async function clearOutputDir() {
 async function runPropertiesShots(page) {
   await capture(page, 'properties-single')
 
-  await page.locator('.fill-swatch').first().click()
+  await page.locator('.paint-swatch').first().click()
   await page.locator('.color-picker').waitFor()
   await capture(page, 'color-picker-open')
   await page.locator('.color-picker__square').click({ position: { x: 30, y: 30 } })
@@ -261,7 +273,7 @@ async function runMixedPropertiesShots(page) {
   await capture(page, 'align-applied')
 
   await layerRow(page, LAYER_SINGLE_ROW).click()
-  const opacityField = page.locator('.fill-row .field__input').nth(FILL_OPACITY_INDEX)
+  const opacityField = page.locator('.paint-row .field__input').nth(FILL_OPACITY_INDEX)
   await opacityField.click()
   await opacityField.fill(MIXED_OPACITY_PERCENT)
   await page.keyboard.press('Enter')
@@ -269,13 +281,41 @@ async function runMixedPropertiesShots(page) {
   await parkPointer(page)
   await capture(page, 'properties-mixed')
 
-  const hexField = page.locator('.fill-row .field__input').nth(FILL_HEX_INDEX)
+  const hexField = page.locator('.paint-row .field__input').nth(FILL_HEX_INDEX)
   await layerRow(page, LAYER_SINGLE_ROW).click()
   await hexField.click()
   await hexField.fill('FF5722')
   await hexField.press('Enter')
   await parkPointer(page)
   await capture(page, 'properties-hex')
+}
+
+async function runPaintShots(page) {
+  await page.evaluate('document.activeElement?.blur()')
+  await drawRectangle(page, STROKE_RECT.start, STROKE_RECT.end)
+  await parkPointer(page)
+  await captureElement(page, RIGHT_PANEL, 'panel-no-stroke')
+
+  await page.getByLabel(STROKE_ADD_LABEL).click()
+  await parkPointer(page)
+  await capture(page, 'stroke-added')
+  await captureElement(page, RIGHT_PANEL, 'panel-stroke-weight')
+
+  const weight = page.getByLabel(STROKE_WEIGHT_LABEL)
+  await weight.click()
+  await weight.fill(STROKE_WEIGHT)
+  await weight.press('Enter')
+  await parkPointer(page)
+  await capture(page, 'stroke-weight')
+  await captureElement(page, RIGHT_PANEL, 'panel-stroke')
+
+  await page.locator('.paint-row .paint-swatch').last().click()
+  await page.locator('.color-picker').waitFor()
+  await page.locator('.color-picker__square').click({ position: { x: 120, y: 30 } })
+  await parkPointer(page)
+  await capture(page, 'stroke-color')
+  await captureElement(page, RIGHT_PANEL, 'panel-stroke-color')
+  await page.mouse.click(GRID_CENTER.x, GRID_CENTER.y)
 }
 
 async function runSnapShots(page) {
@@ -332,6 +372,7 @@ async function runShots(page) {
   await runLayersShots(page)
   await runMixedPropertiesShots(page)
   await runSnapShots(page)
+  await runPaintShots(page)
 }
 
 await clearOutputDir()

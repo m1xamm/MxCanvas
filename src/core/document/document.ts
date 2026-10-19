@@ -3,6 +3,8 @@ import { clonePaint } from '../color'
 import type { NodeId, Paint, SceneNodeUnion } from './types'
 import type { NodeBox } from '../transform'
 
+export const MAX_STROKE_WEIGHT = 1000
+
 export class Document {
   #nodes = new Map<NodeId, SceneNodeUnion>()
   #rootChildren: NodeId[] = []
@@ -75,6 +77,20 @@ export class Document {
     const node = this.#nodes.get(id)
     if (!node) return
     node.fills = fills.map(clonePaint)
+    this.#markChanged()
+  }
+
+  setNodeStrokes(id: NodeId, strokes: readonly Paint[]): void {
+    const node = this.#nodes.get(id)
+    if (!node) return
+    node.strokes = strokes.map(clonePaint)
+    this.#markChanged()
+  }
+
+  setNodeStrokeWeight(id: NodeId, weight: number): void {
+    const node = this.#nodes.get(id)
+    if (!node) return
+    node.strokeWeight = clampStrokeWeight(weight)
     this.#markChanged()
   }
 
@@ -176,4 +192,9 @@ function clampUnit(value: number): number {
 function clampRadius(radius: number, width: number, height: number): number {
   if (!Number.isFinite(radius)) return 0
   return Math.min(Math.max(0, radius), Math.min(width, height) / 2)
+}
+
+function clampStrokeWeight(weight: number): number {
+  if (!Number.isFinite(weight)) return 0
+  return Math.min(Math.max(0, weight), MAX_STROKE_WEIGHT)
 }

@@ -26,6 +26,8 @@ function createRectangle(options: RectangleOptions): RectangleNode {
     locked: false,
     opacity: 1,
     constrainProportions: false,
+    strokes: [],
+    strokeWeight: 0,
     fills: [],
     cornerRadius: 0,
   }

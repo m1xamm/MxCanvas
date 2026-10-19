@@ -1,23 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import { createRectangleNode } from './document/create-node'
-import { fillIndexForRow, summarizeFills } from './fills'
+import { paintIndexForRow, summarizeFills, summarizeStrokes } from './paints'
 import type { Paint, RectangleNode } from './document/types'
 
-function rectangle(id: string, fills: Paint[]): RectangleNode {
+function rectangle(id: string, fills: Paint[] = [], strokes: Paint[] = []): RectangleNode {
   const node = createRectangleNode({ id, name: id, x: 0, y: 0, width: 100, height: 100 })
-  return { ...node, fills }
+  return { ...node, fills, strokes }
 }
 
 function solid(hex: number, opacity = 1, visible = true): Paint {
   return { type: 'solid', color: { r: hex, g: hex, b: hex }, opacity, visible }
 }
 
-describe('fillIndexForRow', () => {
+describe('paintIndexForRow', () => {
   it('numbers rows from the top of the stack', () => {
-    expect(fillIndexForRow(1, 0)).toBe(0)
-    expect(fillIndexForRow(3, 0)).toBe(2)
-    expect(fillIndexForRow(3, 2)).toBe(0)
-    expect(fillIndexForRow(3, 3)).toBeNull()
+    expect(paintIndexForRow(1, 0)).toBe(0)
+    expect(paintIndexForRow(3, 0)).toBe(2)
+    expect(paintIndexForRow(3, 2)).toBe(0)
+    expect(paintIndexForRow(3, 3)).toBeNull()
   })
 })
 
@@ -56,5 +56,21 @@ describe('summarizeFills', () => {
 
   it('returns nothing without nodes', () => {
     expect(summarizeFills([])).toEqual([])
+  })
+})
+
+describe('summarizeStrokes', () => {
+  it('returns nothing when no node has a stroke', () => {
+    expect(summarizeStrokes([rectangle('a', [solid(1)])])).toEqual([])
+  })
+
+  it('lists stroke rows the same way as fills', () => {
+    const rows = summarizeStrokes([
+      rectangle('a', [], [solid(20)]),
+      rectangle('b', [], [solid(30), solid(40)]),
+    ])
+    expect(rows.map((row) => row.paint.color.r)).toEqual([20, 30])
+    expect(rows[0]?.mixedColor).toBe(true)
+    expect(rows[1]?.mixedColor).toBe(false)
   })
 })

@@ -10,12 +10,14 @@ import { SetFillsCommand } from '../core/commands/set-fills-command'
 import { SetNodeLockedCommand } from '../core/commands/set-node-locked-command'
 import { SetNodeVisibleCommand } from '../core/commands/set-node-visible-command'
 import { SetOpacityCommand } from '../core/commands/set-opacity-command'
+import { SetStrokeWeightCommand } from '../core/commands/set-stroke-weight-command'
+import { SetStrokesCommand } from '../core/commands/set-strokes-command'
 import type { NodeBoxChange } from '../core/commands/node-box-change'
 import { clamp01, clonePaint, clonePaints } from '../core/color'
-import { createRectangleNode, DEFAULT_RECTANGLE_FILL } from '../core/document/create-node'
+import { createRectangleNode, DEFAULT_FILL, DEFAULT_STROKE } from '../core/document/create-node'
 import { Document } from '../core/document/document'
-import type { NodeId, RectangleNode, RgbColor, SceneNodeUnion, SolidPaint } from '../core/document/types'
-import { fillIndexForRow } from '../core/fills'
+import type { NodeId, Paint, RectangleNode, RgbColor, SceneNodeUnion } from '../core/document/types'
+import { paintIndexForRow } from '../core/paints'
 import { planLayerReorder, siblingGroups, type LayerMove, type LayerOrderMode } from '../core/layers'
 import type { Vec2 } from '../core/math/matrix'
 import type { Rect } from '../core/math/rect'
@@ -108,47 +110,84 @@ export function setSelectionConstrainProportions(value: boolean): void {
 }
 
 export function addSelectionFill(): void {
-  const command = SetFillsCommand.forNodes(scene, selectionStore.get(), (node) => [
-    ...clonePaints(node.fills),
-    clonePaint(DEFAULT_RECTANGLE_FILL),
-  ])
-  if (command) history.execute(command)
+  applySelectionPaints('fills', (node) => [...clonePaints(node.fills), clonePaint(DEFAULT_FILL)])
 }
 
 export function removeSelectionFill(row: number): void {
-  const command = SetFillsCommand.forNodes(scene, selectionStore.get(), (node) =>
-    node.fills.filter((_paint, index) => index !== fillIndexForRow(node.fills.length, row)).map(clonePaint),
-  )
-  if (command) history.execute(command)
+  applySelectionPaints('fills', (node) => removePaintAt(node.fills, row))
 }
 
 export function setSelectionFillColor(row: number, color: RgbColor, live = false): void {
-  updateSelectionFill(row, (paint) => ({ ...paint, color }), live)
+  applySelectionPaints('fills', (node) => updatePaintAt(node.fills, row, (paint) => ({ ...paint, color })), live)
 }
 
 export function setSelectionFillOpacity(row: number, opacity: number, live = false): void {
-  updateSelectionFill(row, (paint) => ({ ...paint, opacity: clamp01(opacity) }), live)
+  applySelectionPaints(
+    'fills',
+    (node) => updatePaintAt(node.fills, row, (paint) => ({ ...paint, opacity: clamp01(opacity) })),
+    live,
+  )
 }
 
 export function setSelectionFillVisible(row: number, visible: boolean): void {
-  updateSelectionFill(row, (paint) => ({ ...paint, visible }), false)
+  applySelectionPaints('fills', (node) => updatePaintAt(node.fills, row, (paint) => ({ ...paint, visible })))
 }
 
-function updateSelectionFill(
-  row: number,
-  update: (paint: SolidPaint) => SolidPaint,
-  live: boolean,
-): void {
-  const command = SetFillsCommand.forNodes(
-    scene,
-    selectionStore.get(),
-    (node) =>
-      node.fills.map((paint, index) =>
-        index === fillIndexForRow(node.fills.length, row) ? update(clonePaint(paint)) : clonePaint(paint),
-      ),
-    { mergeable: live },
+export function addSelectionStroke(): void {
+  applySelectionPaints('strokes', (node) => [...clonePaints(node.strokes), clonePaint(DEFAULT_STROKE)])
+}
+
+export function removeSelectionStroke(row: number): void {
+  applySelectionPaints('strokes', (node) => removePaintAt(node.strokes, row))
+}
+
+export function setSelectionStrokeColor(row: number, color: RgbColor, live = false): void {
+  applySelectionPaints('strokes', (node) => updatePaintAt(node.strokes, row, (paint) => ({ ...paint, color })), live)
+}
+
+export function setSelectionStrokeOpacity(row: number, opacity: number, live = false): void {
+  applySelectionPaints(
+    'strokes',
+    (node) => updatePaintAt(node.strokes, row, (paint) => ({ ...paint, opacity: clamp01(opacity) })),
+    live,
   )
+}
+
+export function setSelectionStrokeVisible(row: number, visible: boolean): void {
+  applySelectionPaints('strokes', (node) => updatePaintAt(node.strokes, row, (paint) => ({ ...paint, visible })))
+}
+
+export function setSelectionStrokeWeight(weight: number, live = false): void {
+  const ids = selectionStore.get()
+  if (ids.length === 0) return
+  const command = SetStrokeWeightCommand.forNodes(scene, ids, weight, { mergeable: live })
   if (command) history.execute(command)
+}
+
+type PaintField = 'fills' | 'strokes'
+
+function applySelectionPaints(
+  field: PaintField,
+  update: (node: SceneNodeUnion) => Paint[],
+  live = false,
+): void {
+  const ids = selectionStore.get()
+  if (ids.length === 0) return
+  const command =
+    field === 'fills'
+      ? SetFillsCommand.forNodes(scene, ids, update, { mergeable: live })
+      : SetStrokesCommand.forNodes(scene, ids, update, { mergeable: live })
+  if (command) history.execute(command)
+}
+
+function removePaintAt(paints: readonly Paint[], row: number): Paint[] {
+  const index = paintIndexForRow(paints.length, row)
+  return paints.filter((_paint, at) => at !== index).map(clonePaint)
+}
+
+function updatePaintAt(paints: readonly Paint[], row: number, update: (paint: Paint) => Paint): Paint[] {
+  const index = paintIndexForRow(paints.length, row)
+  return paints.map((paint, at) => (at === index ? update(clonePaint(paint)) : clonePaint(paint)))
 }
 
 export function deleteSelection(): void {
