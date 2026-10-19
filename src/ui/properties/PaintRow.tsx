@@ -8,7 +8,7 @@ import { useTranslation } from '../../i18n/use-i18n'
 import { Cluster } from '../Cluster'
 import { Icon } from '../Icon'
 import { ColorPicker } from './ColorPicker'
-import { NumberField } from './NumberField'
+import { MIXED_PLACEHOLDER, NumberField } from './NumberField'
 
 export interface PaintRowProps {
   summary: PaintSummary
@@ -40,6 +40,7 @@ export function PaintRow({
   const swatchRef = useRef<HTMLButtonElement | null>(null)
   const { paint } = summary
   const visible = summary.mixedVisible ? false : paint.visible
+  const hexLabel = summary.mixedColor ? `${t('hexLabel')}, ${t('mixedValue')}` : t('hexLabel')
 
   return (
     <Cluster class="paint-row">
@@ -52,14 +53,14 @@ export function PaintRow({
         style={{ background: withAlphaColor(paint.color, paint.opacity) }}
         onClick={() => setPickerOpen((value) => !value)}
       />
-      <label class="field field--hex">
+      <label class="field field--hex" title={hexLabel}>
         <input
           class="field__input"
           type="text"
           value={summary.mixedColor ? '' : rgbToHex(paint.color)}
-          placeholder={summary.mixedColor ? t('mixedValue') : ''}
+          placeholder={summary.mixedColor ? MIXED_PLACEHOLDER : ''}
           spellcheck={false}
-          aria-label={t('hexLabel')}
+          aria-label={hexLabel}
           onChange={(event) => {
             const parsed = hexToRgb(event.currentTarget.value)
             if (parsed) onHexChange(parsed)

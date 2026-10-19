@@ -8,6 +8,9 @@ import type { IconName } from '../icons'
 const STEP = 1
 const SHIFT_FACTOR = 10
 const ALT_FACTOR = 0.1
+const MIXED_LABEL_SEPARATOR = ', '
+
+export const MIXED_PLACEHOLDER = '—'
 
 type LabelPointerEvent = TargetedEvent<HTMLSpanElement, PointerEvent>
 
@@ -32,7 +35,10 @@ export function NumberField({ label, icon, value, suffix, min, max, title, onCha
   const t = useTranslation()
   const [draft, setDraft] = useState<string | null>(null)
   const scrub = useRef<ScrubState | null>(null)
-  const text = draft ?? (value === null ? '' : formatNumber(value))
+  const mixed = value === null
+  const text = draft ?? (mixed ? '' : formatNumber(value))
+  const controlName = title ?? label ?? icon ?? ''
+  const accessibleName = mixed ? `${controlName}${MIXED_LABEL_SEPARATOR}${t('mixedValue')}` : controlName
 
   const clamp = (next: number): number => {
     let result = next
@@ -99,7 +105,7 @@ export function NumberField({ label, icon, value, suffix, min, max, title, onCha
   }
 
   return (
-    <label class="field" title={title}>
+    <label class="field" title={mixed ? accessibleName : title}>
       <span
         class="field__label"
         onPointerDown={onLabelPointerDown}
@@ -115,8 +121,8 @@ export function NumberField({ label, icon, value, suffix, min, max, title, onCha
         inputMode="decimal"
         spellcheck={false}
         value={text}
-        placeholder={value === null ? t('mixedValue') : ''}
-        aria-label={title ?? label ?? icon}
+        placeholder={mixed ? MIXED_PLACEHOLDER : ''}
+        aria-label={accessibleName}
         onFocus={() => setDraft(value === null ? '' : formatNumber(value))}
         onInput={(event) => setDraft(event.currentTarget.value)}
         onKeyDown={onKeyDown}

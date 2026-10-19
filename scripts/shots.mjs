@@ -301,6 +301,7 @@ async function runMixedPropertiesShots(page) {
   await layerRow(page, LAYER_MULTI_ROW).click({ modifiers: ['Control'] })
   await parkPointer(page)
   await capture(page, 'properties-mixed')
+  await captureElement(page, RIGHT_PANEL, 'mixed-panel')
 
   const hexField = page.locator('.paint-row .field__input').nth(FILL_HEX_INDEX)
   await layerRow(page, LAYER_SINGLE_ROW).click()
