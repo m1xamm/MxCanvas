@@ -19,6 +19,8 @@ export const ru: Dictionary = {
   languageLabel: 'Язык',
   canvasGridLabel: 'Сетка на холсте',
   pixelGridLabel: 'Пиксельная сетка',
+  pixelSnapLabel: 'Привязка к пиксельной сетке',
+  objectSnapLabel: 'Привязка к объектам',
   mixedValue: 'Смешанное',
   positionX: 'X',
   positionY: 'Y',

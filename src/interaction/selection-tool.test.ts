@@ -28,13 +28,14 @@ function createRectangle(id: string, x: number, y: number, size = 100): Rectangl
 function pointer(
   x: number,
   y: number,
-  modifiers: { shiftKey?: boolean; altKey?: boolean } = {},
+  modifiers: { shiftKey?: boolean; altKey?: boolean; ctrlKey?: boolean } = {},
 ): SelectionPointerInput {
   return {
     pointerId: 1,
     screen: { x, y },
     shiftKey: modifiers.shiftKey ?? false,
     altKey: modifiers.altKey ?? false,
+    ctrlKey: modifiers.ctrlKey ?? false,
   }
 }
 

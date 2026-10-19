@@ -1,11 +1,13 @@
 import { useEffect, useLayoutEffect, useRef } from 'preact/hooks'
 import { CreateNodeCommand } from '../core/commands/create-node-command'
 import type { NodeId } from '../core/document/types'
+import type { SnapGuide } from '../core/snap'
 import type { NodeBox } from '../core/transform'
 import { Viewport } from '../core/viewport'
 import { CanvasController } from '../interaction/canvas-controller'
 import { hoveredLayerStore, setHoveredLayer } from '../interaction/layer-list'
 import { selectionStore, setSelection } from '../interaction/selection'
+import { SnapContext } from '../interaction/snapping'
 import type { ToolId } from '../interaction/tools'
 import { Canvas2DRenderer } from '../render/canvas2d-renderer'
 import {
@@ -20,13 +22,24 @@ import {
   toggleSelectionLocked,
   toggleSelectionVisible,
 } from './editor'
-import { isCanvasGridVisible, isPixelGridVisible, subscribeCanvasGrid, subscribePixelGrid, togglePixelGridVisible } from './settings'
+import {
+  isCanvasGridVisible,
+  isObjectSnapEnabled,
+  isPixelGridVisible,
+  isPixelSnapEnabled,
+  subscribeCanvasGrid,
+  subscribePixelGrid,
+  togglePixelGridVisible,
+  togglePixelSnap,
+} from './settings'
 import { observeDevicePixelRatio } from './observe-device-pixel-ratio'
 import { readViewportArea } from './viewport-area'
 import { setViewportActions } from './viewport-actions'
 import { setTool, setZoom } from './store'
 
 const NO_PREVIEWS: ReadonlyMap<NodeId, NodeBox> = new Map<NodeId, NodeBox>()
+const NO_IDS: readonly NodeId[] = []
+const NO_GUIDES: readonly SnapGuide[] = []
 
 export interface CanvasStageProps {
   tool: ToolId
@@ -50,6 +63,13 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
 
     const viewport = new Viewport()
     let controller: CanvasController | null = null
+    const snapContext = new SnapContext({
+      scene,
+      viewport,
+      getSettings: () => ({ pixelSnap: isPixelSnapEnabled(), objectSnap: isObjectSnapEnabled() }),
+      getExcludedIds: () => (controller?.isTransforming ? selectionStore.get() : NO_IDS),
+      getViewportSize: () => ({ width: canvas.clientWidth, height: canvas.clientHeight }),
+    })
     const renderer = new Canvas2DRenderer(canvas, viewport, {
       scene,
       getSelection: () => selectionStore.get(),
@@ -59,6 +79,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       getPreviews: () => controller?.previews ?? NO_PREVIEWS,
       getSelectionBounds: () => controller?.selectionBounds ?? null,
       getDraft: () => controller?.draft ?? null,
+      getSnapGuides: () => controller?.snapGuides ?? NO_GUIDES,
       isGridVisible: isCanvasGridVisible,
       isPixelGridVisible,
     })
@@ -85,7 +106,9 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       onToggleSelectionVisible: toggleSelectionVisible,
       onToggleSelectionLocked: toggleSelectionLocked,
       onTogglePixelGrid: togglePixelGridVisible,
+      onTogglePixelSnap: togglePixelSnap,
       onReorderSelection: reorderSelection,
+      snap: (rect, mode, edges, disabled) => snapContext.snap(rect, mode, edges, disabled),
       getViewportArea: () => readViewportArea(canvas.clientWidth, canvas.clientHeight),
       isInputBlocked: () => blockedRef.current,
     })

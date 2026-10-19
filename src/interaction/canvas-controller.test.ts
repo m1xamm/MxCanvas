@@ -158,6 +158,7 @@ function setup(
   const onToggleSelectionLocked = vi.fn<() => void>()
   const onTogglePixelGrid = vi.fn<() => void>()
   const onReorderSelection = vi.fn<(mode: LayerOrderMode) => void>()
+  const onTogglePixelSnap = vi.fn<() => void>()
   let selection: readonly NodeId[] = []
   const onSelectionChange = vi.fn<(ids: readonly NodeId[]) => void>((ids) => {
     selection = ids
@@ -180,6 +181,7 @@ function setup(
     onToggleSelectionVisible,
     onToggleSelectionLocked,
     onTogglePixelGrid,
+    onTogglePixelSnap,
     onReorderSelection,
     getViewportArea: options.getViewportArea,
   })

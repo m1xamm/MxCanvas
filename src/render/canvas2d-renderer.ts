@@ -3,9 +3,10 @@ import type { NodeId, SceneNodeUnion, SceneReader } from '../core/document/types
 import { canvasGrid } from '../core/canvas-grid'
 import { paintToCss } from '../core/color'
 import { pixelGrid } from '../core/pixel-grid'
-import { applyToPoint, multiply, scaling, type Mat2D } from '../core/math/matrix'
+import { applyToPoint, multiply, scaling, type Mat2D, type Vec2 } from '../core/math/matrix'
 import { transformRect, type Rect } from '../core/math/rect'
 import { boxWorldTransform, type NodeBox } from '../core/transform'
+import type { SnapGuide } from '../core/snap'
 import type { Viewport } from '../core/viewport'
 import type { ResizeHandleId } from '../interaction/resize'
 import { collectVisibleNodes } from './culling'
@@ -20,6 +21,8 @@ import { readThemeColors, type ThemeColors } from './theme-colors'
 const OUTLINE_SCREEN_PX = 1
 const MAX_CORNER_RADIUS_FACTOR = 0.5
 const DRAFT_FILL_ALPHA = 0.6
+const GUIDE_MARKER_ARM_PX = 4
+const NO_SNAP_GUIDES: readonly SnapGuide[] = []
 
 export interface Canvas2DRendererOptions {
   scene: SceneReader
@@ -30,6 +33,7 @@ export interface Canvas2DRendererOptions {
   getPreviews?: () => ReadonlyMap<NodeId, NodeBox>
   getSelectionBounds?: () => Rect | null
   getDraft?: () => Rect | null
+  getSnapGuides?: () => readonly SnapGuide[]
   isGridVisible?: () => boolean
   isPixelGridVisible?: () => boolean
 }
@@ -46,6 +50,7 @@ export class Canvas2DRenderer implements Renderer {
   #getPreviews: () => ReadonlyMap<NodeId, NodeBox>
   #getSelectionBounds: () => Rect | null
   #getDraft: () => Rect | null
+  #getSnapGuides: () => readonly SnapGuide[]
   #isGridVisible: () => boolean
   #isPixelGridVisible: () => boolean
   #colors: ThemeColors
@@ -73,6 +78,7 @@ export class Canvas2DRenderer implements Renderer {
     this.#getPreviews = options.getPreviews ?? (() => new Map())
     this.#getSelectionBounds = options.getSelectionBounds ?? (() => null)
     this.#getDraft = options.getDraft ?? (() => null)
+    this.#getSnapGuides = options.getSnapGuides ?? (() => NO_SNAP_GUIDES)
     this.#isGridVisible = options.isGridVisible ?? (() => false)
     this.#isPixelGridVisible = options.isPixelGridVisible ?? (() => false)
     this.#colors = readThemeColors()
@@ -120,6 +126,7 @@ export class Canvas2DRenderer implements Renderer {
     this.#drawSelectionOutline(deviceViewport)
     this.#drawMarquee()
     this.#drawDraft(deviceViewport)
+    this.#drawSnapGuides()
     const hoveredHandle = this.#getHoveredHandle()
     drawSelectionOverlay({
       context: this.#context,
@@ -261,6 +268,39 @@ export class Canvas2DRenderer implements Renderer {
     context.stroke()
   }
 
+  #drawSnapGuides(): void {
+    const guides = this.#getSnapGuides()
+    if (guides.length === 0) return
+    const context = this.#context
+    const viewport = this.#viewport.matrix()
+    this.#applyScreenTransform()
+    context.strokeStyle = this.#colors.guide
+    context.lineWidth = OUTLINE_SCREEN_PX
+    context.beginPath()
+    for (const guide of guides) {
+      const from = applyToPoint(viewport, guidePoint(guide, guide.from))
+      const to = applyToPoint(viewport, guidePoint(guide, guide.to))
+      if (guide.axis === 'x') {
+        const x = Math.round(from.x) + 0.5
+        const startY = Math.round(from.y)
+        const endY = Math.round(to.y)
+        context.moveTo(x, startY)
+        context.lineTo(x, endY)
+        traceGuideMarker(context, x, startY)
+        traceGuideMarker(context, x, endY)
+      } else {
+        const y = Math.round(from.y) + 0.5
+        const startX = Math.round(from.x)
+        const endX = Math.round(to.x)
+        context.moveTo(startX, y)
+        context.lineTo(endX, y)
+        traceGuideMarker(context, startX, y)
+        traceGuideMarker(context, endX, y)
+      }
+    }
+    context.stroke()
+  }
+
   #traceNodePath(node: SceneNodeUnion, width: number, height: number): void {
     const context = this.#context
     const maxRadius = Math.min(width, height) * MAX_CORNER_RADIUS_FACTOR
@@ -293,4 +333,16 @@ export class Canvas2DRenderer implements Renderer {
   #applyScreenTransform(): void {
     this.#context.setTransform(this.#devicePixelRatio, 0, 0, this.#devicePixelRatio, 0, 0)
   }
+}
+
+function guidePoint(guide: SnapGuide, value: number): Vec2 {
+  return guide.axis === 'x' ? { x: guide.position, y: value } : { x: value, y: guide.position }
+}
+
+function traceGuideMarker(context: CanvasRenderingContext2D, x: number, y: number): void {
+  const arm = GUIDE_MARKER_ARM_PX
+  context.moveTo(x - arm, y - arm)
+  context.lineTo(x + arm, y + arm)
+  context.moveTo(x + arm, y - arm)
+  context.lineTo(x - arm, y + arm)
 }

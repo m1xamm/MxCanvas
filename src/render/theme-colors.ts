@@ -8,6 +8,7 @@ export interface ThemeColors {
   primary: string
   onSurface: string
   onPrimary: string
+  guide: string
   fontFamily: string
   marqueeFill: string
 }
@@ -22,6 +23,7 @@ export function readThemeColors(): ThemeColors {
     primary,
     onSurface: readToken(styles, '--color-on-surface'),
     onPrimary: readToken(styles, '--color-on-primary'),
+    guide: readToken(styles, '--color-guide'),
     fontFamily: readToken(styles, '--font-family') || FALLBACK_FONT_FAMILY,
     marqueeFill: withAlpha(primary, MARQUEE_FILL_ALPHA),
   }

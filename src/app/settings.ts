@@ -4,9 +4,15 @@ const CANVAS_GRID_STORAGE_KEY = 'mxcanvas.canvasGrid'
 const CANVAS_GRID_DEFAULT = true
 const PIXEL_GRID_STORAGE_KEY = 'mxcanvas.pixelGrid'
 const PIXEL_GRID_DEFAULT = true
+const PIXEL_SNAP_STORAGE_KEY = 'mxcanvas.pixelSnap'
+const PIXEL_SNAP_DEFAULT = true
+const OBJECT_SNAP_STORAGE_KEY = 'mxcanvas.objectSnap'
+const OBJECT_SNAP_DEFAULT = true
 
 export const canvasGridStore = new Store<boolean>(readStoredCanvasGrid())
 export const pixelGridStore = new Store<boolean>(readStoredPixelGrid())
+export const pixelSnapStore = new Store<boolean>(readStoredPixelSnap())
+export const objectSnapStore = new Store<boolean>(readStoredObjectSnap())
 
 export function isCanvasGridVisible(): boolean {
   return canvasGridStore.get()
@@ -40,12 +46,44 @@ export function subscribePixelGrid(listener: () => void): () => void {
   return pixelGridStore.subscribe(() => listener())
 }
 
+export function isPixelSnapEnabled(): boolean {
+  return pixelSnapStore.get()
+}
+
+export function setPixelSnapEnabled(enabled: boolean): void {
+  if (pixelSnapStore.get() === enabled) return
+  pixelSnapStore.set(enabled)
+  storeFlag(PIXEL_SNAP_STORAGE_KEY, enabled)
+}
+
+export function togglePixelSnap(): void {
+  setPixelSnapEnabled(!pixelSnapStore.get())
+}
+
+export function isObjectSnapEnabled(): boolean {
+  return objectSnapStore.get()
+}
+
+export function setObjectSnapEnabled(enabled: boolean): void {
+  if (objectSnapStore.get() === enabled) return
+  objectSnapStore.set(enabled)
+  storeFlag(OBJECT_SNAP_STORAGE_KEY, enabled)
+}
+
 function readStoredCanvasGrid(): boolean {
   return readStoredFlag(CANVAS_GRID_STORAGE_KEY, CANVAS_GRID_DEFAULT)
 }
 
 function readStoredPixelGrid(): boolean {
   return readStoredFlag(PIXEL_GRID_STORAGE_KEY, PIXEL_GRID_DEFAULT)
+}
+
+function readStoredPixelSnap(): boolean {
+  return readStoredFlag(PIXEL_SNAP_STORAGE_KEY, PIXEL_SNAP_DEFAULT)
+}
+
+function readStoredObjectSnap(): boolean {
+  return readStoredFlag(OBJECT_SNAP_STORAGE_KEY, OBJECT_SNAP_DEFAULT)
 }
 
 function readStoredFlag(key: string, fallback: boolean): boolean {

@@ -3,13 +3,14 @@ import type { NodeBoxChange } from '../core/commands/node-box-change'
 import { type LayerOrderMode } from '../core/layers'
 import type { Vec2 } from '../core/math/matrix'
 import type { Rect } from '../core/math/rect'
+import { ALL_SNAP_EDGES, type SnapGuide } from '../core/snap'
 import { sceneBounds, type NodeBox } from '../core/transform'
 import type { Viewport } from '../core/viewport'
 import { fitBounds } from '../core/viewport-fit'
 import { collectSelectableIds } from './hit-testing'
-import { rectangleFromDrag, type RectangleDragModifiers } from './rectangle-draft'
+import { rectangleDraft, type RectangleDragModifiers, type RectangleDraftSnap } from './rectangle-draft'
 import type { ResizeHandleId } from './resize'
-import { SelectionTool, type SelectionPointerInput } from './selection-tool'
+import { SelectionTool, type SelectionPointerInput, type SelectionSnap } from './selection-tool'
 import { TOOL_HOTKEYS, type ToolId } from './tools'
 import { normalizeWheelDelta, wheelPanDelta, wheelZoomFactor } from './wheel'
 
@@ -64,10 +65,14 @@ export interface CanvasControllerOptions {
   onToggleSelectionVisible: () => void
   onToggleSelectionLocked: () => void
   onTogglePixelGrid: () => void
+  onTogglePixelSnap: () => void
   onReorderSelection: (mode: LayerOrderMode) => void
+  snap?: SelectionSnap
   getViewportArea?: () => Rect
   isInputBlocked?: () => boolean
 }
+
+const NO_GUIDES: readonly SnapGuide[] = []
 
 export class CanvasController {
   #canvas: HTMLCanvasElement
@@ -81,6 +86,8 @@ export class CanvasController {
   #lastScreen: Vec2 = { x: 0, y: 0 }
   #pointer: Vec2 = { x: 0, y: 0 }
   #draft: Rect | null = null
+  #draftGuides: readonly SnapGuide[] = NO_GUIDES
+  #draftSnap: RectangleDraftSnap | null
   #draftPointerId: number | null = null
   #draftStart: Vec2 = { x: 0, y: 0 }
 
@@ -89,6 +96,8 @@ export class CanvasController {
     this.#viewport = viewport
     this.#options = options
     this.#tool = options.initialTool
+    const snap = options.snap
+    this.#draftSnap = snap ? (rect, disabled) => snap(rect, 'resize', ALL_SNAP_EDGES, disabled) : null
     this.#selectionTool = new SelectionTool({
       scene: options.scene,
       viewport,
@@ -97,6 +106,7 @@ export class CanvasController {
       onMoveSelection: options.onMoveSelection,
       onResizeSelection: options.onResizeSelection,
       onOverlayChange: options.onOverlayChange,
+      snap: options.snap,
     })
     canvas.addEventListener('wheel', this.#onWheel, { passive: false })
     canvas.addEventListener('pointerdown', this.#onPointerDown)
@@ -113,6 +123,14 @@ export class CanvasController {
 
   get draft(): Rect | null {
     return this.#draft
+  }
+
+  get snapGuides(): readonly SnapGuide[] {
+    return this.#draftGuides.length > 0 ? this.#draftGuides : this.#selectionTool.snapGuides
+  }
+
+  get isTransforming(): boolean {
+    return this.#selectionTool.isTransforming
   }
 
   get hoveredId(): NodeId | null {
@@ -216,7 +234,7 @@ export class CanvasController {
       event.preventDefault()
       this.#draftPointerId = event.pointerId
       this.#draftStart = this.#viewport.screenToWorld(this.#pointer)
-      this.#draft = rectangleFromDrag(this.#draftStart, this.#draftStart, dragModifiers(event))
+      this.#updateDraft(this.#draftStart, dragModifiers(event), event.ctrlKey)
       this.#canvas.setPointerCapture(event.pointerId)
       this.#options.onDraftChange()
       return
@@ -241,7 +259,7 @@ export class CanvasController {
     }
     if (this.#draftPointerId !== null && event.pointerId === this.#draftPointerId) {
       const world = this.#viewport.screenToWorld(this.#pointer)
-      this.#draft = rectangleFromDrag(this.#draftStart, world, dragModifiers(event))
+      this.#updateDraft(world, dragModifiers(event), event.ctrlKey)
       this.#options.onDraftChange()
       return
     }
@@ -263,6 +281,7 @@ export class CanvasController {
       const cancelled = event.type === 'pointercancel'
       this.#draftPointerId = null
       this.#draft = null
+      this.#draftGuides = NO_GUIDES
       this.#releasePointerCapture(event.pointerId)
       if (draft && !cancelled) this.#options.onCreateRectangle(draft)
       this.#options.onDraftChange()
@@ -380,7 +399,11 @@ export class CanvasController {
     }
     if (event.code === TOGGLE_PIXEL_GRID_KEY_CODE) {
       event.preventDefault()
-      this.#options.onTogglePixelGrid()
+      if (event.shiftKey) {
+        this.#options.onTogglePixelSnap()
+      } else {
+        this.#options.onTogglePixelGrid()
+      }
       return
     }
     if (event.code === BRING_FORWARD_KEY_CODE) {
@@ -441,8 +464,21 @@ export class CanvasController {
     const pointerId = this.#draftPointerId
     this.#draftPointerId = null
     this.#draft = null
+    this.#draftGuides = NO_GUIDES
     this.#releasePointerCapture(pointerId)
     this.#options.onDraftChange()
+  }
+
+  #updateDraft(end: Vec2, modifiers: RectangleDragModifiers, disabled: boolean): void {
+    const draft = rectangleDraft({
+      start: this.#draftStart,
+      end,
+      modifiers,
+      snap: this.#draftSnap,
+      snapDisabled: disabled,
+    })
+    this.#draft = draft.rect
+    this.#draftGuides = draft.guides
   }
 
   #releasePointerCapture(pointerId: number): void {
@@ -488,10 +524,16 @@ export class CanvasController {
 }
 
 function selectionPointer(
-  event: { pointerId: number; shiftKey: boolean; altKey: boolean },
+  event: { pointerId: number; shiftKey: boolean; altKey: boolean; ctrlKey: boolean },
   screen: Vec2,
 ): SelectionPointerInput {
-  return { pointerId: event.pointerId, screen, shiftKey: event.shiftKey, altKey: event.altKey }
+  return {
+    pointerId: event.pointerId,
+    screen,
+    shiftKey: event.shiftKey,
+    altKey: event.altKey,
+    ctrlKey: event.ctrlKey,
+  }
 }
 
 function dragModifiers(event: { shiftKey: boolean; altKey: boolean }): RectangleDragModifiers {

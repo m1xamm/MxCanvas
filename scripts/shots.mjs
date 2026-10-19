@@ -42,6 +42,10 @@ const FILL_OPACITY_INDEX = 1
 const MIXED_OPACITY_PERCENT = '40'
 const ALIGN_LEFT_INDEX = 0
 
+const SNAP_ANCHOR = { start: { x: 420, y: 300 }, end: { x: 560, y: 420 } }
+const SNAP_MOVED = { start: { x: 760, y: 480 }, end: { x: 900, y: 600 } }
+const SNAP_DRAG_OFFSET = { x: -336, y: -50 }
+
 async function withPage(viewport, run) {
   const server = await createServer({ server: { port: 5199, strictPort: true } })
   await server.listen()
@@ -274,6 +278,24 @@ async function runMixedPropertiesShots(page) {
   await capture(page, 'properties-hex')
 }
 
+async function runSnapShots(page) {
+  await page.evaluate('document.activeElement?.blur()')
+  await drawRectangle(page, SNAP_ANCHOR.start, SNAP_ANCHOR.end)
+  await drawRectangle(page, SNAP_MOVED.start, SNAP_MOVED.end)
+  const center = {
+    x: (SNAP_MOVED.start.x + SNAP_MOVED.end.x) / 2,
+    y: (SNAP_MOVED.start.y + SNAP_MOVED.end.y) / 2,
+  }
+  await page.mouse.move(center.x, center.y)
+  await page.mouse.down()
+  await page.mouse.move(center.x + SNAP_DRAG_OFFSET.x, center.y + SNAP_DRAG_OFFSET.y, { steps: 12 })
+  await capture(page, 'snap-guides')
+  await captureCrop(page, 'snap-guides-zoom', { x: 340, y: 240, width: 460, height: 420 })
+  await page.mouse.up()
+  await parkPointer(page)
+  await capture(page, 'snap-guides-result')
+}
+
 async function runShots(page) {
   await capture(page, 'initial')
   await captureCrop(page, 'logo-crop', { x: 6, y: 6, width: 52, height: 52 })
@@ -309,6 +331,7 @@ async function runShots(page) {
 
   await runLayersShots(page)
   await runMixedPropertiesShots(page)
+  await runSnapShots(page)
 }
 
 await clearOutputDir()

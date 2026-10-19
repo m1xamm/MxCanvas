@@ -17,6 +17,8 @@ export const en = {
   languageLabel: 'Language',
   canvasGridLabel: 'Canvas grid',
   pixelGridLabel: 'Pixel grid',
+  pixelSnapLabel: 'Snap to pixel grid',
+  objectSnapLabel: 'Snap to objects',
   mixedValue: 'Mixed',
   positionX: 'X',
   positionY: 'Y',

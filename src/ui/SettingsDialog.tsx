@@ -1,5 +1,14 @@
 import { useEffect, useRef } from 'preact/hooks'
-import { canvasGridStore, pixelGridStore, setCanvasGridVisible, setPixelGridVisible } from '../app/settings'
+import {
+  canvasGridStore,
+  objectSnapStore,
+  pixelGridStore,
+  pixelSnapStore,
+  setCanvasGridVisible,
+  setObjectSnapEnabled,
+  setPixelGridVisible,
+  setPixelSnapEnabled,
+} from '../app/settings'
 import { useStoreValue } from '../app/use-store-value'
 import { LANGUAGES, setLanguage } from '../i18n/i18n'
 import { useLanguage, useTranslation } from '../i18n/use-i18n'
@@ -20,6 +29,8 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
   const language = useLanguage()
   const canvasGridVisible = useStoreValue(canvasGridStore)
   const pixelGridVisible = useStoreValue(pixelGridStore)
+  const pixelSnapEnabled = useStoreValue(pixelSnapStore)
+  const objectSnapEnabled = useStoreValue(objectSnapStore)
   const cardRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -107,6 +118,22 @@ export function SettingsDialog({ onClose }: SettingsDialogProps) {
               checked={pixelGridVisible}
               label={t('pixelGridLabel')}
               onChange={setPixelGridVisible}
+            />
+          </div>
+          <div class="dialog-row">
+            <span class="dialog-label">{t('pixelSnapLabel')}</span>
+            <Switch
+              checked={pixelSnapEnabled}
+              label={t('pixelSnapLabel')}
+              onChange={setPixelSnapEnabled}
+            />
+          </div>
+          <div class="dialog-row">
+            <span class="dialog-label">{t('objectSnapLabel')}</span>
+            <Switch
+              checked={objectSnapEnabled}
+              label={t('objectSnapLabel')}
+              onChange={setObjectSnapEnabled}
             />
           </div>
         </Cluster>

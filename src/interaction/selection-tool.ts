@@ -2,11 +2,12 @@ import type { NodeId, SceneReader } from '../core/document/types'
 import type { NodeBoxChange } from '../core/commands/node-box-change'
 import type { Vec2 } from '../core/math/matrix'
 import { boundsOfRects, mapRectWithBounds, normalizeRect, translateRect, transformRect, type Rect } from '../core/math/rect'
+import { ALL_SNAP_EDGES, type SnapEdgeMask, type SnapGuide, type SnapMode, type SnapResult } from '../core/snap'
 import { nodeBox, nodeWorldRect, worldRectToBox, type NodeBox } from '../core/transform'
 import type { Viewport } from '../core/viewport'
 import { isDrag, moveDelta } from './gesture'
 import { collectNodesInRect, hitTest } from './hit-testing'
-import { handleAtPoint, handleCursor, resizeBounds, type ResizeHandleId } from './resize'
+import { handleAtPoint, handleCursor, handlePoint, resizeBounds, type ResizeHandleId } from './resize'
 import { selectionOnPress, toggleSelection, unionSelection } from './selection'
 
 export interface SelectionPointerInput {
@@ -14,7 +15,15 @@ export interface SelectionPointerInput {
   screen: Vec2
   shiftKey: boolean
   altKey: boolean
+  ctrlKey: boolean
 }
+
+export type SelectionSnap = (
+  rect: Rect,
+  mode: SnapMode,
+  edges: SnapEdgeMask,
+  disabled: boolean,
+) => SnapResult
 
 export interface SelectionToolOptions {
   scene: SceneReader
@@ -24,7 +33,20 @@ export interface SelectionToolOptions {
   onMoveSelection: (delta: Vec2) => void
   onResizeSelection: (changes: readonly NodeBoxChange[]) => void
   onOverlayChange: () => void
+  snap?: SelectionSnap
 }
+
+const HANDLE_SNAP_EDGES: Readonly<Record<ResizeHandleId, SnapEdgeMask>> = {
+  nw: { left: true, right: false, top: true, bottom: false },
+  n: { left: false, right: false, top: true, bottom: false },
+  ne: { left: false, right: true, top: true, bottom: false },
+  e: { left: false, right: true, top: false, bottom: false },
+  se: { left: false, right: true, top: false, bottom: true },
+  s: { left: false, right: false, top: false, bottom: true },
+  sw: { left: true, right: false, top: false, bottom: true },
+  w: { left: true, right: false, top: false, bottom: false },
+}
+
 
 interface NodeRect {
   id: NodeId
@@ -64,6 +86,7 @@ interface ResizeGesture {
 type Gesture = MarqueeGesture | MoveGesture | ResizeGesture
 
 const NO_PREVIEWS: ReadonlyMap<NodeId, NodeBox> = new Map<NodeId, NodeBox>()
+const NO_SNAP_GUIDES: readonly SnapGuide[] = []
 
 export class SelectionTool {
   #scene: SceneReader
@@ -74,6 +97,7 @@ export class SelectionTool {
   #gesture: Gesture | null = null
   #previews: ReadonlyMap<NodeId, NodeBox> = NO_PREVIEWS
   #previewBounds: Rect | null = null
+  #snapGuides: readonly SnapGuide[] = NO_SNAP_GUIDES
 
   constructor(options: SelectionToolOptions) {
     this.#scene = options.scene
@@ -99,6 +123,15 @@ export class SelectionTool {
 
   get selectionBounds(): Rect | null {
     return this.#previewBounds ?? this.#selectedRect()
+  }
+
+  get snapGuides(): readonly SnapGuide[] {
+    return this.#snapGuides
+  }
+
+  get isTransforming(): boolean {
+    const gesture = this.#gesture
+    return gesture !== null && gesture.kind !== 'marquee'
   }
 
   pointerDown(input: SelectionPointerInput): void {
@@ -182,6 +215,7 @@ export class SelectionTool {
     if (!gesture || input.pointerId !== gesture.pointerId) return false
     this.#gesture = null
     this.#clearPreview()
+    this.#snapGuides = NO_SNAP_GUIDES
     if (gesture.kind === 'move') {
       this.#finishMove(gesture)
     } else if (gesture.kind === 'resize') {
@@ -198,6 +232,7 @@ export class SelectionTool {
     if (!this.#gesture) return false
     this.#gesture = null
     this.#clearPreview()
+    this.#snapGuides = NO_SNAP_GUIDES
     this.#setHoveredHandle(null)
     this.#options.onOverlayChange()
     return true
@@ -214,15 +249,30 @@ export class SelectionTool {
     return this.#hoveredHandle ? handleCursor(this.#hoveredHandle) : 'default'
   }
 
-  #updateMove(gesture: MoveGesture, world: Vec2, input: { screen: Vec2; shiftKey: boolean }): void {
+  #updateMove(
+    gesture: MoveGesture,
+    world: Vec2,
+    input: { screen: Vec2; shiftKey: boolean; ctrlKey: boolean },
+  ): void {
     if (!gesture.moved && !isDrag(gesture.startScreen, input.screen)) return
     gesture.moved = true
-    gesture.delta = moveDelta(gesture.startWorld, world, input.shiftKey)
+    gesture.delta = this.#snappedDelta(gesture, moveDelta(gesture.startWorld, world, input.shiftKey), input.ctrlKey)
     this.#previews = previewsFor(this.#scene, gesture.origins, gesture.delta)
     this.#previewBounds = gesture.startBounds
       ? translateRect(gesture.startBounds, gesture.delta)
       : null
     this.#options.onOverlayChange()
+  }
+
+  #snappedDelta(gesture: MoveGesture, delta: Vec2, disabled: boolean): Vec2 {
+    const bounds = gesture.startBounds
+    const snap = this.#options.snap
+    if (!bounds || !snap) return delta
+    const moved = translateRect(bounds, delta)
+    const snapped = snap(moved, 'move', ALL_SNAP_EDGES, disabled)
+    this.#snapGuides = snapped.guides
+    if (snapped.rect === moved) return delta
+    return { x: snapped.rect.x - bounds.x, y: snapped.rect.y - bounds.y }
   }
 
   #constrainProportions(): boolean {
@@ -235,15 +285,20 @@ export class SelectionTool {
     return true
   }
 
-  #updateResize(gesture: ResizeGesture, world: Vec2, input: SelectionPointerInput): void {    if (!gesture.moved && !isDrag(gesture.startScreen, input.screen)) return
+  #updateResize(gesture: ResizeGesture, world: Vec2, input: SelectionPointerInput): void {
+    if (!gesture.moved && !isDrag(gesture.startScreen, input.screen)) return
     gesture.moved = true
-    gesture.rawBounds = resizeBounds({
+    const proportional = input.shiftKey || this.#constrainProportions()
+    const request = {
       bounds: gesture.startBounds,
       handle: gesture.handle,
       pointer: world,
-      proportional: input.shiftKey || this.#constrainProportions(),
+      proportional,
       fromCenter: input.altKey,
-    })
+    }
+    const raw = resizeBounds(request)
+    const snapped = this.#snapResize(gesture, raw, request, input.ctrlKey)
+    gesture.rawBounds = snapped
     this.#previews = resizedBoxesFor(
       this.#scene,
       gesture.origins,
@@ -252,6 +307,33 @@ export class SelectionTool {
     )
     this.#previewBounds = normalizeRect(gesture.rawBounds)
     this.#options.onOverlayChange()
+  }
+
+  #snapResize(
+    gesture: ResizeGesture,
+    raw: Rect,
+    request: {
+      bounds: Rect
+      handle: ResizeHandleId
+      proportional: boolean
+      fromCenter: boolean
+    },
+    disabled: boolean,
+  ): Rect {
+    const snap = this.#options.snap
+    if (!snap) return raw
+    const edges = snapEdgesForHandle(gesture.handle, request.fromCenter)
+    const snapped = snap(raw, 'resize', edges, disabled)
+    this.#snapGuides = snapped.guides
+    if (snapped.rect === raw) return raw
+    if (!request.proportional) return snapped.rect
+    return resizeBounds({
+      bounds: request.bounds,
+      handle: request.handle,
+      pointer: handlePoint(snapped.rect, request.handle),
+      proportional: true,
+      fromCenter: request.fromCenter,
+    })
   }
 
   #finishMove(gesture: MoveGesture): void {
@@ -351,4 +433,12 @@ function resizedBoxesFor(
     boxes.set(origin.id, worldRectToBox(scene, node, mapRectWithBounds(origin.rect, from, to)))
   }
   return boxes
+}
+
+function snapEdgesForHandle(handle: ResizeHandleId, fromCenter: boolean): SnapEdgeMask {
+  const edges = HANDLE_SNAP_EDGES[handle]
+  if (!fromCenter) return edges
+  const horizontal = edges.left || edges.right
+  const vertical = edges.top || edges.bottom
+  return { left: horizontal, right: horizontal, top: vertical, bottom: vertical }
 }
