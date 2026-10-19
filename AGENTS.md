@@ -64,7 +64,7 @@ All colors, spacing, radii, typography and motion come from CSS variables in src
 - Hotkeys use KeyboardEvent.code (physical keys) so they work on the Russian layout.
 
 ## Figma behavior is the spec
-When unsure how something should behave, copy Figma. Hotkeys: V move, R rectangle, O ellipse, L line, Shift+L arrow, T text, F frame, P pen, H hand, Space+drag pan, scroll = pan, Ctrl+scroll / pinch = zoom at cursor, Shift+0 zoom 100%, Shift+1 zoom to fit, Shift+2 zoom to selection, Ctrl+Z undo, Ctrl+Shift+Z redo, Ctrl+D duplicate, Ctrl+G group, Ctrl+Shift+G ungroup, Ctrl+Alt+G frame selection, Shift+A auto layout, Ctrl+Alt+K create component, Ctrl+] / Ctrl+[ bring forward / send backward.
+When unsure how something should behave, copy Figma. Hotkeys: V move, R rectangle, O ellipse, L line, Shift+L arrow, T text, F frame, P pen, H hand, Space+drag pan, scroll = pan, Ctrl+scroll / pinch = zoom at cursor, Shift+0 zoom 100%, Shift+1 zoom to fit, Shift+2 zoom to selection, Ctrl+' pixel grid, Ctrl+Shift+' snap to pixel, Ctrl+Z undo, Ctrl+Shift+Z redo, Ctrl+D duplicate, Ctrl+G group, Ctrl+Shift+G ungroup, Ctrl+Alt+G frame selection, Shift+A auto layout, Ctrl+Alt+K create component, Ctrl+] / Ctrl+[ bring forward / send backward.
 
 ## Working rules for the AI
 - Do exactly the stage the user asked for. No extra features.
