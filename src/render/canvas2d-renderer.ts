@@ -14,8 +14,6 @@ import {
   drawSelectionOverlay,
   HANDLE_HOVER_DURATION_MS,
   handleHoverScale,
-  labelAnimationDone,
-  labelAppearScale,
 } from './selection-overlay'
 import { readThemeColors, type ThemeColors } from './theme-colors'
 
@@ -58,7 +56,6 @@ export class Canvas2DRenderer implements Renderer {
   #previews: ReadonlyMap<NodeId, NodeBox> = new Map()
   #hoveredHandle: ResizeHandleId | null = null
   #hoverStartedAt = 0
-  #labelStartedAt: number | null = null
   #dirty = false
   #frameHandle = 0
 
@@ -124,28 +121,15 @@ export class Canvas2DRenderer implements Renderer {
     this.#drawMarquee()
     this.#drawDraft(deviceViewport)
     const hoveredHandle = this.#getHoveredHandle()
-    const bounds = this.#getSelectionBounds()
     drawSelectionOverlay({
       context: this.#context,
       viewportMatrix: this.#viewport.matrix(),
-      bounds,
+      bounds: this.#getSelectionBounds(),
       colors: this.#colors,
       devicePixelRatio: this.#devicePixelRatio,
       hoveredHandle,
       hoverScale: this.#hoverScale(hoveredHandle, time),
-      labelScale: this.#labelScale(bounds !== null, time),
     })
-  }
-
-  #labelScale(visible: boolean, time: number): number {
-    if (!visible) {
-      this.#labelStartedAt = null
-      return 1
-    }
-    if (this.#labelStartedAt === null) this.#labelStartedAt = time
-    const elapsed = time - this.#labelStartedAt
-    if (!labelAnimationDone(elapsed)) this.requestRender()
-    return labelAppearScale(elapsed)
   }
 
   #hoverScale(handle: ResizeHandleId | null, time: number): number {

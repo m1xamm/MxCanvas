@@ -39,38 +39,6 @@
   border-radius: var(--radius-outer) 0 0 var(--radius-outer);
 }
 
-.side-panel > * {
-  animation: block-enter var(--motion-medium) var(--motion-emphasized) both;
-}
-
-.side-panel > :nth-child(2) {
-  animation-delay: 20ms;
-}
-
-.side-panel > :nth-child(3) {
-  animation-delay: 40ms;
-}
-
-.side-panel > :nth-child(4) {
-  animation-delay: 60ms;
-}
-
-.side-panel > :nth-child(5) {
-  animation-delay: 80ms;
-}
-
-.side-panel > :nth-child(6) {
-  animation-delay: 100ms;
-}
-
-.side-panel > :nth-child(7) {
-  animation-delay: 120ms;
-}
-
-.side-panel > :nth-child(n + 8) {
-  animation-delay: 140ms;
-}
-
 .block {
   min-width: 0;
   background: var(--color-block);
@@ -142,14 +110,6 @@
 
 .control:active:not(:disabled)::after {
   opacity: var(--state-pressed);
-}
-
-.control:active:not(:disabled) {
-  transform: scale(var(--press-scale));
-}
-
-.control {
-  transition: transform var(--motion-short) var(--motion-spring);
 }
 
 .control.is-active {
@@ -232,30 +192,13 @@
   transform: translateX(-50%);
 }
 
-.toolbar__indicator {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: var(--toolbar-button-size);
-  border-radius: var(--radius-pill);
-  background: var(--color-block-selected);
-  transition:
-    transform var(--motion-medium) var(--motion-spring),
-    width var(--motion-medium) var(--motion-spring),
-    opacity var(--motion-fast) var(--motion-easing);
-}
-
-.toolbar > .tool-group {
-  z-index: 1;
-}
-
 .tool-group {
   position: relative;
   background: var(--color-block);
 }
 
 .tool-group.is-active {
-  background: none;
+  background: var(--color-block-selected);
   color: var(--color-on-primary-container);
 }
 
@@ -321,34 +264,6 @@
 .popup.is-open {
   opacity: 1;
   transform: none;
-}
-
-.popup .cluster > * {
-  animation: row-enter var(--motion-short) var(--motion-emphasized) both;
-}
-
-.popup .cluster > :nth-child(2) {
-  animation-delay: 20ms;
-}
-
-.popup .cluster > :nth-child(3) {
-  animation-delay: 40ms;
-}
-
-.popup .cluster > :nth-child(4) {
-  animation-delay: 60ms;
-}
-
-.popup .cluster > :nth-child(5) {
-  animation-delay: 80ms;
-}
-
-.popup .cluster > :nth-child(6) {
-  animation-delay: 100ms;
-}
-
-.popup .cluster > :nth-child(n + 7) {
-  animation-delay: 120ms;
 }
 
 .menu-item {
@@ -511,10 +426,6 @@
   border-radius: var(--radius-pill);
   background: var(--color-block-selected);
   color: var(--color-on-primary-container);
-}
-
-.layer-row--new {
-  animation: row-enter var(--motion-medium) var(--motion-emphasized) both;
 }
 
 .layer-row__icon {

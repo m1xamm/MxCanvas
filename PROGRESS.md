@@ -90,3 +90,8 @@
 - Task 4 (part 3): selection box helpers with ratio and minimum size, mergeable resize commands, pure fill summaries; the right Design panel now has NumberField rows (scrub, arrows with shift and alt steps, expressions, escape, mixed placeholders), a lock-proportions toggle, fill rows with swatch, hex, percent, eye and remove, and a live custom color picker (SV square, hue, alpha, hex) with math covered by tests.
 - Task 5: motion tokens (short/fast/medium/long, emphasized and spring easings, press scale) drive a sliding toolbar indicator, press scale on controls, one-time staggered sidebar block entrance, 20 ms popup item staggering, dialog scale and backdrop fade, a spring switch thumb, fade-in of newly created layer rows, radius morphing of layer rows and a scale-in of the canvas size badge; everything animates transform, opacity or radius only, honours prefers-reduced-motion and adds no per-frame work.
 - Task 6 (stretch): pure align and distribute math with tests, applied through the existing resize command, with an Align block of six align and two distribute buttons in the Design panel for multi-selection.
+
+## Stage 7 — Figma structure, motion cleanup, snapping, strokes, effects
+
+- Task 0: AGENTS.md gained a Motion section (allowed and forbidden motion), a Brand line naming the logos by theme and a UI/design rule that structure, placement and behavior mirror Figma UI3.
+- Task 1: the menu button and the dark-scheme favicon use logo-dark.svg; both logos lost their internal viewBox padding (viewBox 2.657 2.657 105.686 105.686) so a 28px render is exactly 28px; the button logo is 28px, centered (measured offset 0,0).

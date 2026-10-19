@@ -26,7 +26,6 @@ export interface LayerRowProps {
   order: readonly NodeId[]
   selected: boolean
   renaming: boolean
-  fresh?: boolean
   onRenameStart: (id: NodeId) => void
   onRenameCommit: (id: NodeId, name: string) => void
   onRenameCancel: () => void
@@ -93,7 +92,7 @@ export function LayerRow(props: LayerRowProps) {
     props.onRenameCommit(node.id, inputRef.current?.value ?? node.name)
   }
 
-  const className = buildClassName(selected, props.fresh === true)
+  const className = selected ? 'layer-row is-selected' : 'layer-row'
   const corners = layerRowCorners(index, rowCount)
   const visibilityClass = node.visible ? 'control layer-row__action' : 'control layer-row__action is-on'
   const lockClass = node.locked ? 'control layer-row__action is-on' : 'control layer-row__action'
@@ -179,11 +178,4 @@ export function LayerRow(props: LayerRowProps) {
 
 function isActionTarget(target: EventTarget | null): boolean {
   return target instanceof Element && target.closest(ACTION_SELECTOR) !== null
-}
-
-function buildClassName(selected: boolean, fresh: boolean): string {
-  const classes = ['layer-row']
-  if (selected) classes.push('is-selected')
-  if (fresh) classes.push('layer-row--new')
-  return classes.join(' ')
 }
