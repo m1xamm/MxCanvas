@@ -1,7 +1,7 @@
 import type { Document } from './document/document'
 import type { NodeId } from './document/types'
 
-export const LAYER_ROW_HEIGHT = 32
+export const LAYER_ROW_HEIGHT = 28
 export const LAYER_ROW_GAP = 2
 export const LAYER_ROW_PITCH = LAYER_ROW_HEIGHT + LAYER_ROW_GAP
 export const LAYER_OVERSCAN = 4

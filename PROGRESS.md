@@ -95,3 +95,4 @@
 
 - Task 0: AGENTS.md gained a Motion section (allowed and forbidden motion), a Brand line naming the logos by theme and a UI/design rule that structure, placement and behavior mirror Figma UI3.
 - Task 1: the menu button and the dark-scheme favicon use logo-dark.svg; both logos lost their internal viewBox padding (viewBox 2.657 2.657 105.686 105.686) so a 28px render is exactly 28px; the button logo is 28px, centered (measured offset 0,0).
+- Task 2: the toolbar indicator, the popup item stagger, the sidebar block entrance, the new-layer fade, the size label scale-in and the press scale are gone; the active tool group carries its own primary-container pill; tokens motion-short, motion-long and press-scale deleted; `shots` gained a 2x logo crop.

@@ -9,7 +9,9 @@ export const en = {
   pages: 'Pages',
   layers: 'Layers',
   assets: 'Assets',
+  untitledFile: 'Untitled',
   pageName: 'Page 1',
+  addPage: 'Add page',
   noLayers: 'No layers yet',
   noAssets: 'No assets yet',
   languageLabel: 'Language',
@@ -75,6 +77,7 @@ export const en = {
   sections: {
     align: 'Align',
     position: 'Position',
+    size: 'Size',
     layout: 'Layout',
     appearance: 'Appearance',
     fill: 'Fill',

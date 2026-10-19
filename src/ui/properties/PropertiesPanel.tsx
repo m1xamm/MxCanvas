@@ -71,85 +71,94 @@ export function PropertiesPanel() {
 
   return (
     <>
-      {ids.length >= MIN_ALIGN_COUNT && (
-        <div class="block block--section">
-          <span class="section-title">{t('sections.align')}</span>
-          <Cluster>
-            {ALIGN_ACTIONS.map((action) => (
-              <button
-                key={action.mode}
-                type="button"
-                class="control align-button"
-                aria-label={t(action.label)}
-                title={t(action.label)}
-                onClick={() => alignSelection(action.mode)}
-              >
-                <Icon name={action.icon} size={16} />
-              </button>
-            ))}
-          </Cluster>
-          <Cluster>
-            {DISTRIBUTE_ACTIONS.map((action) => (
-              <button
-                key={action.mode}
-                type="button"
-                class="control align-button"
-                aria-label={t(action.label)}
-                title={t(action.label)}
-                disabled={ids.length < MIN_DISTRIBUTE_COUNT}
-                onClick={() => distributeSelection(action.mode)}
-              >
-                <Icon name={action.icon} size={16} />
-              </button>
-            ))}
-          </Cluster>
-        </div>
-      )}
+      <div class="block block--section">
+        <span class="section-title">{t('sections.align')}</span>
+        <Cluster>
+          {ALIGN_ACTIONS.map((action) => (
+            <button
+              key={action.mode}
+              type="button"
+              class="control align-button"
+              aria-label={t(action.label)}
+              title={t(action.label)}
+              disabled={ids.length < MIN_ALIGN_COUNT}
+              onClick={() => alignSelection(action.mode)}
+            >
+              <Icon name={action.icon} size={16} />
+            </button>
+          ))}
+        </Cluster>
+        <Cluster>
+          {DISTRIBUTE_ACTIONS.map((action) => (
+            <button
+              key={action.mode}
+              type="button"
+              class="control align-button"
+              aria-label={t(action.label)}
+              title={t(action.label)}
+              disabled={ids.length < MIN_DISTRIBUTE_COUNT}
+              onClick={() => distributeSelection(action.mode)}
+            >
+              <Icon name={action.icon} size={16} />
+            </button>
+          ))}
+        </Cluster>
+      </div>
       {rect && (
-        <div class="block block--section">
-          <span class="section-title">{t('sections.position')}</span>
-          <Cluster>
-            <NumberField
-              label={t('positionX')}
-              value={rect.x}
-              title={t('positionX')}
-              onChange={(value, live) => setSelectionField('x', value, live)}
-            />
-            <NumberField
-              label={t('positionY')}
-              value={rect.y}
-              title={t('positionY')}
-              onChange={(value, live) => setSelectionField('y', value, live)}
-            />
-          </Cluster>
-          <Cluster>
-            <NumberField
-              label={t('sizeWidth')}
-              value={rect.width}
-              min={MIN_SIZE}
-              title={t('sizeWidth')}
-              onChange={(value, live) => setSelectionField('width', value, live)}
-            />
-            <NumberField
-              label={t('sizeHeight')}
-              value={rect.height}
-              min={MIN_SIZE}
-              title={t('sizeHeight')}
-              onChange={(value, live) => setSelectionField('height', value, live)}
-            />
-          </Cluster>
-        </div>
+        <>
+          <div class="block block--section">
+            <span class="section-title">{t('sections.position')}</span>
+            <Cluster>
+              <NumberField
+                label={t('positionX')}
+                value={rect.x}
+                title={t('positionX')}
+                onChange={(value, live) => setSelectionField('x', value, live)}
+              />
+              <NumberField
+                label={t('positionY')}
+                value={rect.y}
+                title={t('positionY')}
+                onChange={(value, live) => setSelectionField('y', value, live)}
+              />
+            </Cluster>
+          </div>
+          <div class="block block--section">
+            <span class="section-title">{t('sections.size')}</span>
+            <Cluster>
+              <NumberField
+                label={t('sizeWidth')}
+                value={rect.width}
+                min={MIN_SIZE}
+                title={t('sizeWidth')}
+                onChange={(value, live) => setSelectionField('width', value, live)}
+              />
+              <NumberField
+                label={t('sizeHeight')}
+                value={rect.height}
+                min={MIN_SIZE}
+                title={t('sizeHeight')}
+                onChange={(value, live) => setSelectionField('height', value, live)}
+              />
+              <button
+                type="button"
+                class={
+                  constrained ? 'control proportion-toggle is-active' : 'control proportion-toggle'
+                }
+                aria-label={t('constrainProportionsLabel')}
+                title={t('constrainProportionsLabel')}
+                aria-pressed={constrained}
+                onClick={() => setSelectionConstrainProportions(!constrained)}
+              >
+                <Icon name={constrained ? 'link' : 'linkOff'} size={16} filled={constrained} />
+              </button>
+            </Cluster>
+          </div>
+        </>
       )}
       <div class="block block--section">
         <span class="section-title">{t('sections.appearance')}</span>
         <Cluster>
-          <NumberField
-            icon="cornerRadius"
-            value={uniformValue(nodes, (node) => node.cornerRadius)}
-            min={0}
-            title={t('cornerRadiusLabel')}
-            onChange={(value, live) => setSelectionCornerRadius(value, live)}
-          />
           <NumberField
             icon="opacity"
             value={percentValue(nodes, (node) => node.opacity)}
@@ -159,15 +168,13 @@ export function PropertiesPanel() {
             title={t('opacityLabel')}
             onChange={(value, live) => setSelectionOpacity(value, live)}
           />
-          <button
-            type="button"
-            class={constrained ? 'control proportion-toggle is-active' : 'control proportion-toggle'}
-            aria-label={t('constrainProportionsLabel')}
-            aria-pressed={constrained}
-            onClick={() => setSelectionConstrainProportions(!constrained)}
-          >
-            <Icon name={constrained ? 'link' : 'linkOff'} size={16} filled={constrained} />
-          </button>
+          <NumberField
+            icon="cornerRadius"
+            value={uniformValue(nodes, (node) => node.cornerRadius)}
+            min={0}
+            title={t('cornerRadiusLabel')}
+            onChange={(value, live) => setSelectionCornerRadius(value, live)}
+          />
         </Cluster>
       </div>
       <div class="block block--section">
@@ -177,6 +184,7 @@ export function PropertiesPanel() {
             type="button"
             class="control icon-button"
             aria-label={t('addFill')}
+            title={t('addFill')}
             onClick={addSelectionFill}
           >
             <Icon name="add" size={16} />

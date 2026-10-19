@@ -11,7 +11,9 @@ export const ru: Dictionary = {
   pages: 'Страницы',
   layers: 'Слои',
   assets: 'Ресурсы',
+  untitledFile: 'Без названия',
   pageName: 'Страница 1',
+  addPage: 'Добавить страницу',
   noLayers: 'Пока нет слоев',
   noAssets: 'Пока нет ресурсов',
   languageLabel: 'Язык',
@@ -77,6 +79,7 @@ export const ru: Dictionary = {
   sections: {
     align: 'Выравнивание',
     position: 'Положение',
+    size: 'Размер',
     layout: 'Раскладка',
     appearance: 'Оформление',
     fill: 'Заливка',

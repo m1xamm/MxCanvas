@@ -4,7 +4,7 @@
   gap: var(--space-1);
   flex: 1;
   min-width: 0;
-  height: 28px;
+  height: var(--field-height);
   padding: 0 var(--space-1) 0 var(--space-2);
   background: var(--color-block);
   color: var(--color-on-surface);
@@ -80,7 +80,7 @@
 .fill-swatch {
   flex: none;
   width: 24px;
-  height: 28px;
+  height: var(--field-height);
   border-radius: var(--radius-seam);
   background: var(--color-block);
 }
@@ -90,7 +90,7 @@
   place-items: center;
   flex: none;
   width: 24px;
-  height: 28px;
+  height: var(--field-height);
   color: var(--color-on-surface-subtle);
 }
 
@@ -103,7 +103,7 @@
   display: grid;
   place-items: center;
   flex: 1;
-  height: 28px;
+  height: var(--field-height);
   color: var(--color-on-surface-variant);
 }
 
@@ -111,8 +111,8 @@
   display: grid;
   place-items: center;
   flex: none;
-  width: 28px;
-  height: 28px;
+  width: var(--field-height);
+  height: var(--field-height);
   color: var(--color-on-surface-subtle);
 }
 

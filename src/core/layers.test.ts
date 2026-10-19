@@ -101,24 +101,31 @@ describe('layerClick', () => {
 })
 
 describe('virtualWindow', () => {
+  const VISIBLE_ROWS = 10
+  const viewportHeight = LAYER_ROW_PITCH * VISIBLE_ROWS
+
   it('renders only the visible rows plus overscan', () => {
-    const window = virtualWindow({ scrollTop: 0, viewportHeight: 340, rowCount: 1000 })
+    const window = virtualWindow({ scrollTop: 0, viewportHeight, rowCount: 1000 })
     expect(window.start).toBe(0)
-    expect(window.end).toBe(10 + LAYER_OVERSCAN)
+    expect(window.end).toBe(VISIBLE_ROWS + LAYER_OVERSCAN)
   })
 
   it('follows the scroll offset', () => {
-    const window = virtualWindow({ scrollTop: 34 * 100, viewportHeight: 340, rowCount: 1000 })
+    const window = virtualWindow({
+      scrollTop: LAYER_ROW_PITCH * 100,
+      viewportHeight,
+      rowCount: 1000,
+    })
     expect(window.start).toBe(100 - LAYER_OVERSCAN)
-    expect(window.end).toBe(110 + LAYER_OVERSCAN)
+    expect(window.end).toBe(100 + VISIBLE_ROWS + LAYER_OVERSCAN)
   })
 
   it('clamps to the row count', () => {
-    expect(virtualWindow({ scrollTop: 0, viewportHeight: 340, rowCount: 3 })).toEqual({
+    expect(virtualWindow({ scrollTop: 0, viewportHeight, rowCount: 3 })).toEqual({
       start: 0,
       end: 3,
     })
-    expect(virtualWindow({ scrollTop: 3400, viewportHeight: 340, rowCount: 0 })).toEqual({
+    expect(virtualWindow({ scrollTop: 3400, viewportHeight, rowCount: 0 })).toEqual({
       start: 0,
       end: 0,
     })
