@@ -19,6 +19,19 @@ export interface SolidPaint {
 
 export type Paint = SolidPaint
 
+export interface DropShadowEffect {
+  type: 'drop-shadow'
+  color: RgbColor
+  opacity: number
+  offsetX: number
+  offsetY: number
+  blur: number
+  spread: number
+  visible: boolean
+}
+
+export type Effect = DropShadowEffect
+
 export interface SceneNode {
   id: NodeId
   type: NodeType
@@ -35,6 +48,7 @@ export interface SceneNode {
   fills: Paint[]
   strokes: Paint[]
   strokeWeight: number
+  effects: Effect[]
 }
 
 export interface RectangleNode extends SceneNode {

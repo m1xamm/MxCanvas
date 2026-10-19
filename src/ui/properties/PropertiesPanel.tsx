@@ -1,14 +1,22 @@
 import { selectionStore } from '../../interaction/selection'
 import {
+  addSelectionEffect,
   addSelectionFill,
   addSelectionStroke,
   alignSelection,
   distributeSelection,
+  removeSelectionEffect,
   removeSelectionFill,
   removeSelectionStroke,
   scene,
   setSelectionConstrainProportions,
   setSelectionCornerRadius,
+  setSelectionEffectBlur,
+  setSelectionEffectColor,
+  setSelectionEffectOffset,
+  setSelectionEffectOpacity,
+  setSelectionEffectSpread,
+  setSelectionEffectVisible,
   setSelectionField,
   setSelectionFillColor,
   setSelectionFillOpacity,
@@ -19,8 +27,10 @@ import {
   setSelectionStrokeVisible,
   setSelectionStrokeWeight,
 } from '../../app/editor'
+import { useState } from 'preact/hooks'
 import { useStoreValue } from '../../app/use-store-value'
 import { useSceneVersion } from '../../app/use-scene-version'
+import { summarizeEffects } from '../../core/effects'
 import { summarizeFills, summarizeStrokes } from '../../core/paints'
 import type { AlignMode, DistributeMode } from '../../core/align'
 import { selectionNodes, selectionRect } from '../../core/selection-box'
@@ -31,6 +41,7 @@ import { useTranslation } from '../../i18n/use-i18n'
 import { Cluster } from '../Cluster'
 import { Icon } from '../Icon'
 import type { IconName } from '../icons'
+import { EffectRow } from './EffectRow'
 import { NumberField } from './NumberField'
 import { PaintOpacityField, PaintRow } from './PaintRow'
 
@@ -68,6 +79,7 @@ export function PropertiesPanel() {
   const t = useTranslation()
   const ids = useStoreValue(selectionStore)
   useSceneVersion()
+  const [expandedEffect, setExpandedEffect] = useState<number | null>(0)
 
   if (ids.length === 0) return null
 
@@ -75,6 +87,7 @@ export function PropertiesPanel() {
   const rect = selectionRect(scene, ids)
   const fills = summarizeFills(nodes)
   const strokes = summarizeStrokes(nodes)
+  const effects = summarizeEffects(nodes)
   const constrained = nodes.length > 0 && nodes.every((node) => node.constrainProportions)
 
   return (
@@ -258,6 +271,66 @@ export function PropertiesPanel() {
                 )
               }
             />
+          ))}
+        </Cluster>
+      </div>
+      <div class="block block--section">
+        <div class="section-head">
+          <span class="section-title">{t('sections.effects')}</span>
+          <button
+            type="button"
+            class="control icon-button"
+            aria-label={t('addEffect')}
+            title={t('addEffect')}
+            onClick={addSelectionEffect}
+          >
+            <Icon name="add" size={16} />
+          </button>
+        </div>
+        <Cluster direction="vertical">
+          {effects.map((summary) => (
+            <EffectRow
+              key={summary.row}
+              summary={summary}
+              expanded={expandedEffect === summary.row}
+              onToggleExpanded={() =>
+                setExpandedEffect((current) => (current === summary.row ? null : summary.row))
+              }
+              onColorChange={(color, live) => setSelectionEffectColor(summary.row, color, live)}
+              onOpacityChange={(opacity, live) => setSelectionEffectOpacity(summary.row, opacity, live)}
+              onVisibleChange={(visible) => setSelectionEffectVisible(summary.row, visible)}
+              onRemove={() => removeSelectionEffect(summary.row)}
+            >
+              <Cluster>
+                <NumberField
+                  label={t('positionX')}
+                  value={summary.mixedOffsetX ? null : summary.effect.offsetX}
+                  title={t('effectXLabel')}
+                  onChange={(value, live) => setSelectionEffectOffset(summary.row, 'x', value, live)}
+                />
+                <NumberField
+                  label={t('positionY')}
+                  value={summary.mixedOffsetY ? null : summary.effect.offsetY}
+                  title={t('effectYLabel')}
+                  onChange={(value, live) => setSelectionEffectOffset(summary.row, 'y', value, live)}
+                />
+              </Cluster>
+              <Cluster>
+                <NumberField
+                  icon="blur"
+                  value={summary.mixedBlur ? null : summary.effect.blur}
+                  min={0}
+                  title={t('effectBlurLabel')}
+                  onChange={(value, live) => setSelectionEffectBlur(summary.row, value, live)}
+                />
+                <NumberField
+                  icon="spread"
+                  value={summary.mixedSpread ? null : summary.effect.spread}
+                  title={t('effectSpreadLabel')}
+                  onChange={(value, live) => setSelectionEffectSpread(summary.row, value, live)}
+                />
+              </Cluster>
+            </EffectRow>
           ))}
         </Cluster>
       </div>

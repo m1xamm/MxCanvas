@@ -39,6 +39,8 @@ export type IconName =
   | 'alignBottom'
   | 'distributeX'
   | 'distributeY'
+  | 'blur'
+  | 'spread'
 
 interface IconFiles {
   outlined: string
@@ -83,6 +85,8 @@ const ICON_FILES: Record<IconName, IconFiles> = {
   alignBottom: { outlined: 'align_vertical_bottom', filled: 'align_vertical_bottom-fill' },
   distributeX: { outlined: 'horizontal_distribute', filled: 'horizontal_distribute-fill' },
   distributeY: { outlined: 'vertical_distribute', filled: 'vertical_distribute-fill' },
+  blur: { outlined: 'blur_medium', filled: 'blur_medium-fill' },
+  spread: { outlined: 'open_in_full', filled: 'open_in_full-fill' },
 }
 
 export const TOOL_ICON_NAMES: Record<ToolId, IconName> = {

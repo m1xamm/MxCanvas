@@ -1,7 +1,7 @@
 import { DEFAULT_FILL } from '../core/document/create-node'
 import type { NodeId, SceneNodeUnion, SceneReader } from '../core/document/types'
 import { canvasGrid } from '../core/canvas-grid'
-import { paintToCss } from '../core/color'
+import { paintToCss, withAlphaColor } from '../core/color'
 import { pixelGrid } from '../core/pixel-grid'
 import { applyToPoint, multiply, scaling, type Mat2D, type Vec2 } from '../core/math/matrix'
 import { transformRect, type Rect } from '../core/math/rect'
@@ -22,7 +22,27 @@ const OUTLINE_SCREEN_PX = 1
 const MAX_CORNER_RADIUS_FACTOR = 0.5
 const DRAFT_FILL_ALPHA = 0.6
 const GUIDE_MARKER_ARM_PX = 4
+const BLUR_SIGMA_FACTOR = 0.5
+const SILHOUETTE_COLOR = '#ffffff'
 const NO_SNAP_GUIDES: readonly SnapGuide[] = []
+const BOX_CORNER_UNITS: readonly Vec2[] = [
+  { x: 0, y: 0 },
+  { x: 1, y: 0 },
+  { x: 1, y: 1 },
+  { x: 0, y: 1 },
+]
+
+interface EffectSurface {
+  canvas: HTMLCanvasElement
+  context: CanvasRenderingContext2D
+}
+
+interface EffectBounds {
+  x: number
+  y: number
+  width: number
+  height: number
+}
 
 export interface Canvas2DRendererOptions {
   scene: SceneReader
@@ -61,6 +81,8 @@ export class Canvas2DRenderer implements Renderer {
   #previews: ReadonlyMap<NodeId, NodeBox> = new Map()
   #hoveredHandle: ResizeHandleId | null = null
   #hoverStartedAt = 0
+  #maskSurface: EffectSurface | null = null
+  #tintSurface: EffectSurface | null = null
   #dirty = false
   #frameHandle = 0
 
@@ -195,7 +217,9 @@ export class Canvas2DRenderer implements Renderer {
     const context = this.#context
     const preview = this.#previews.get(node.id)
     const box: NodeBox = preview ?? node
-    this.#applyTransform(multiply(deviceViewport, this.#nodeWorldTransform(node, preview)))
+    const transform = multiply(deviceViewport, this.#nodeWorldTransform(node, preview))
+    if (node.effects.length > 0) this.#drawDropShadows(node, box, transform)
+    this.#applyTransform(transform)
     this.#traceNodePath(node, box.width, box.height)
     context.globalAlpha = node.opacity
     for (const paint of node.fills) {
@@ -212,6 +236,118 @@ export class Canvas2DRenderer implements Renderer {
       }
     }
     context.globalAlpha = 1
+  }
+
+  #drawDropShadows(node: SceneNodeUnion, box: NodeBox, transform: Mat2D): void {
+    const bounds = this.#effectBounds(box, transform)
+    if (!bounds) return
+    const mask = this.#reserveSurface('mask', bounds)
+    this.#paintSilhouette(mask, node, box, transform, bounds)
+    const worldToDevice = this.#viewport.zoom * this.#devicePixelRatio
+    for (const effect of node.effects) {
+      if (!effect.visible) continue
+      const tint = this.#reserveSurface('tint', bounds)
+      tint.context.drawImage(
+        mask.canvas,
+        0,
+        0,
+        bounds.width,
+        bounds.height,
+        0,
+        0,
+        bounds.width,
+        bounds.height,
+      )
+      tint.context.globalCompositeOperation = 'source-in'
+      tint.context.fillStyle = withAlphaColor(effect.color, 1)
+      tint.context.fillRect(0, 0, bounds.width, bounds.height)
+      tint.context.globalCompositeOperation = 'source-over'
+
+      const context = this.#context
+      context.save()
+      context.setTransform(1, 0, 0, 1, 0, 0)
+      context.globalAlpha = node.opacity * effect.opacity
+      if (effect.blur > 0) {
+        context.filter = `blur(${effect.blur * worldToDevice * BLUR_SIGMA_FACTOR}px)`
+      }
+      context.translate(
+        bounds.x + bounds.width / 2 + effect.offsetX * worldToDevice,
+        bounds.y + bounds.height / 2 + effect.offsetY * worldToDevice,
+      )
+      if (effect.spread !== 0) {
+        context.scale(
+          (bounds.width + effect.spread * 2 * worldToDevice) / bounds.width,
+          (bounds.height + effect.spread * 2 * worldToDevice) / bounds.height,
+        )
+      }
+      context.translate(-bounds.width / 2, -bounds.height / 2)
+      context.drawImage(
+        tint.canvas,
+        0,
+        0,
+        bounds.width,
+        bounds.height,
+        0,
+        0,
+        bounds.width,
+        bounds.height,
+      )
+      context.restore()
+    }
+  }
+
+  #paintSilhouette(
+    surface: EffectSurface,
+    node: SceneNodeUnion,
+    box: NodeBox,
+    transform: Mat2D,
+    bounds: EffectBounds,
+  ): void {
+    const context = surface.context
+    context.setTransform(transform.a, transform.b, transform.c, transform.d, transform.e - bounds.x, transform.f - bounds.y)
+    context.fillStyle = SILHOUETTE_COLOR
+    context.strokeStyle = SILHOUETTE_COLOR
+    traceNodeRect(context, node, box.width, box.height)
+    context.fill()
+    if (node.strokeWeight > 0) {
+      context.lineWidth = node.strokeWeight
+      context.stroke()
+    }
+  }
+
+  #effectBounds(box: NodeBox, transform: Mat2D): EffectBounds | null {
+    let minX = Number.POSITIVE_INFINITY
+    let minY = Number.POSITIVE_INFINITY
+    let maxX = Number.NEGATIVE_INFINITY
+    let maxY = Number.NEGATIVE_INFINITY
+    for (const corner of BOX_CORNER_UNITS) {
+      const point = applyToPoint(transform, { x: corner.x * box.width, y: corner.y * box.height })
+      minX = Math.min(minX, point.x)
+      minY = Math.min(minY, point.y)
+      maxX = Math.max(maxX, point.x)
+      maxY = Math.max(maxY, point.y)
+    }
+    const left = Math.max(Math.floor(minX), 0)
+    const top = Math.max(Math.floor(minY), 0)
+    const width = Math.min(Math.ceil(maxX), this.#canvas.width) - left
+    const height = Math.min(Math.ceil(maxY), this.#canvas.height) - top
+    if (width < 1 || height < 1) return null
+    return { x: left, y: top, width, height }
+  }
+
+  #reserveSurface(kind: 'mask' | 'tint', bounds: EffectBounds): EffectSurface {
+    const surface = (kind === 'mask' ? this.#maskSurface : this.#tintSurface) ?? createEffectSurface()
+    if (kind === 'mask') this.#maskSurface = surface
+    else this.#tintSurface = surface
+    const { canvas, context } = surface
+    if (canvas.width < bounds.width) canvas.width = bounds.width
+    if (canvas.height < bounds.height) canvas.height = bounds.height
+    context.setTransform(1, 0, 0, 1, 0, 0)
+    context.globalAlpha = 1
+    context.globalCompositeOperation = 'source-over'
+    context.filter = 'none'
+    context.clearRect(0, 0, canvas.width, canvas.height)
+    return surface
   }
 
   #drawHoverOutline(deviceViewport: Mat2D): void {
@@ -310,11 +446,7 @@ export class Canvas2DRenderer implements Renderer {
   }
 
   #traceNodePath(node: SceneNodeUnion, width: number, height: number): void {
-    const context = this.#context
-    const maxRadius = Math.min(width, height) * MAX_CORNER_RADIUS_FACTOR
-    const radius = Math.max(0, Math.min(node.cornerRadius, maxRadius))
-    context.beginPath()
-    context.roundRect(0, 0, width, height, radius)
+    traceNodeRect(this.#context, node, width, height)
   }
 
   #nodeWorldTransform(node: SceneNodeUnion, preview: NodeBox | undefined): Mat2D {
@@ -345,6 +477,27 @@ export class Canvas2DRenderer implements Renderer {
 
 function guidePoint(guide: SnapGuide, value: number): Vec2 {
   return guide.axis === 'x' ? { x: guide.position, y: value } : { x: value, y: guide.position }
+}
+
+function createEffectSurface(): EffectSurface {
+  const canvas = document.createElement('canvas')
+  canvas.width = 1
+  canvas.height = 1
+  const context = canvas.getContext('2d')
+  if (!context) throw new Error('Canvas 2D context is unavailable')
+  return { canvas, context }
+}
+
+function traceNodeRect(
+  context: CanvasRenderingContext2D,
+  node: SceneNodeUnion,
+  width: number,
+  height: number,
+): void {
+  const maxRadius = Math.min(width, height) * MAX_CORNER_RADIUS_FACTOR
+  const radius = Math.max(0, Math.min(node.cornerRadius, maxRadius))
+  context.beginPath()
+  context.roundRect(0, 0, width, height, radius)
 }
 
 function traceGuideMarker(context: CanvasRenderingContext2D, x: number, y: number): void {

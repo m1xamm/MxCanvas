@@ -1,4 +1,6 @@
 import type { Paint, RectangleNode, SceneNodeUnion } from './document/types'
+import { sameRgb } from './color'
+import { stackIndexForRow } from './stack'
 
 export interface PaintSummary {
   row: number
@@ -8,21 +10,12 @@ export interface PaintSummary {
   mixedVisible: boolean
 }
 
-export function paintIndexForRow(paintCount: number, row: number): number | null {
-  const index = paintCount - 1 - row
-  return index < 0 ? null : index
-}
-
 export function summarizeFills(nodes: readonly RectangleNode[]): PaintSummary[] {
   return summarizePaints(nodes, (node) => node.fills)
 }
 
 export function summarizeStrokes(nodes: readonly SceneNodeUnion[]): PaintSummary[] {
   return summarizePaints(nodes, (node) => node.strokes)
-}
-
-export function sameColor(a: Paint['color'], b: Paint['color']): boolean {
-  return a.r === b.r && a.g === b.g && a.b === b.b
 }
 
 function summarizePaints<T extends SceneNodeUnion>(
@@ -39,7 +32,7 @@ function summarizePaints<T extends SceneNodeUnion>(
     summaries.push({
       row,
       paint,
-      mixedColor: paints.some((candidate) => !sameColor(candidate.color, paint.color)),
+      mixedColor: paints.some((candidate) => !sameRgb(candidate.color, paint.color)),
       mixedOpacity: paints.some((candidate) => candidate.opacity !== paint.opacity),
       mixedVisible: paints.some((candidate) => candidate.visible !== paint.visible),
     })
@@ -56,7 +49,7 @@ function collectRow<T extends SceneNodeUnion>(
   let primary: Paint | null = null
   nodes.forEach((node, index) => {
     const list = readPaints(node)
-    const paintIndex = paintIndexForRow(list.length, row)
+    const paintIndex = stackIndexForRow(list.length, row)
     const paint = paintIndex === null ? undefined : list[paintIndex]
     if (!paint) return
     if (index === 0) primary = paint

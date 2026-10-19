@@ -31,6 +31,7 @@ function createRectangle(options: RectangleOptions): RectangleNode {
     constrainProportions: false,
     strokes: [],
     strokeWeight: 0,
+    effects: [],
     fills: [],
     cornerRadius: 0,
   }

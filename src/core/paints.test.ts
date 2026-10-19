@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createRectangleNode } from './document/create-node'
-import { paintIndexForRow, summarizeFills, summarizeStrokes } from './paints'
+import { summarizeFills, summarizeStrokes } from './paints'
 import type { Paint, RectangleNode } from './document/types'
 
 function rectangle(id: string, fills: Paint[] = [], strokes: Paint[] = []): RectangleNode {
@@ -11,15 +11,6 @@ function rectangle(id: string, fills: Paint[] = [], strokes: Paint[] = []): Rect
 function solid(hex: number, opacity = 1, visible = true): Paint {
   return { type: 'solid', color: { r: hex, g: hex, b: hex }, opacity, visible }
 }
-
-describe('paintIndexForRow', () => {
-  it('numbers rows from the top of the stack', () => {
-    expect(paintIndexForRow(1, 0)).toBe(0)
-    expect(paintIndexForRow(3, 0)).toBe(2)
-    expect(paintIndexForRow(3, 2)).toBe(0)
-    expect(paintIndexForRow(3, 3)).toBeNull()
-  })
-})
 
 describe('summarizeFills', () => {
   it('lists every fill of a single node from the top down', () => {

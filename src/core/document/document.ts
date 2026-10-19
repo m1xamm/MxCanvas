@@ -1,6 +1,7 @@
 import { multiply, type Mat2D } from '../math/matrix'
 import { clonePaint } from '../color'
-import type { NodeId, Paint, SceneNodeUnion } from './types'
+import { cloneEffects } from '../effects'
+import type { Effect, NodeId, Paint, SceneNodeUnion } from './types'
 import type { NodeBox } from '../transform'
 
 export const MAX_STROKE_WEIGHT = 1000
@@ -91,6 +92,13 @@ export class Document {
     const node = this.#nodes.get(id)
     if (!node) return
     node.strokeWeight = clampStrokeWeight(weight)
+    this.#markChanged()
+  }
+
+  setNodeEffects(id: NodeId, effects: readonly Effect[]): void {
+    const node = this.#nodes.get(id)
+    if (!node) return
+    node.effects = cloneEffects(effects)
     this.#markChanged()
   }
 

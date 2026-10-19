@@ -3,7 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks'
 import type { RefObject, TargetedEvent } from 'preact'
 import { clamp01, hexToRgb, hsvToRgb, rgbToHex, rgbToHsv, type HsvColor } from '../../core/color'
 import type { RgbColor } from '../../core/document/types'
-import { sameColor } from '../../core/paints'
+import { sameRgb } from '../../core/color'
 import { formatNumber, parseNumberInput } from '../../core/number-input'
 import { useTranslation } from '../../i18n/use-i18n'
 import { Cluster } from '../Cluster'
@@ -33,7 +33,7 @@ export function ColorPicker({ color, alpha, anchorRef, onChange, onClose }: Colo
   hsvRef.current = hsv
 
   useEffect(() => {
-    if (emitted.current && sameColor(emitted.current, color)) return
+    if (emitted.current && sameRgb(emitted.current, color)) return
     setHsv(rgbToHsv(color))
   }, [color.r, color.g, color.b])
 

@@ -83,6 +83,10 @@ export function withAlphaColor(color: RgbColor, alpha: number): string {
   return `rgba(${clampChannel(color.r)}, ${clampChannel(color.g)}, ${clampChannel(color.b)}, ${clamp01(alpha)})`
 }
 
+export function sameRgb(a: RgbColor, b: RgbColor): boolean {
+  return a.r === b.r && a.g === b.g && a.b === b.b
+}
+
 export function clampChannel(value: number): number {
   if (!Number.isFinite(value)) return 0
   return Math.min(MAX_CHANNEL, Math.max(0, Math.round(value)))

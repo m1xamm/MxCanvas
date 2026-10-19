@@ -3,8 +3,10 @@ import { History } from '../history'
 import { Document, MAX_STROKE_WEIGHT } from '../document/document'
 import { createRectangleNode } from '../document/create-node'
 import type { Paint, RectangleNode } from '../document/types'
+import { DEFAULT_DROP_SHADOW } from '../effects'
 import { SetConstrainProportionsCommand } from './set-constrain-proportions-command'
 import { SetCornerRadiusCommand } from './set-corner-radius-command'
+import { SetEffectsCommand } from './set-effects-command'
 import { SetFillsCommand } from './set-fills-command'
 import { SetOpacityCommand } from './set-opacity-command'
 import { SetStrokeWeightCommand } from './set-stroke-weight-command'
@@ -199,6 +201,40 @@ describe('SetStrokeWeightCommand', () => {
     expect(first.mergeWith(second)).toBe(true)
     first.execute()
     expect(document.getNode('a')?.strokeWeight).toBe(8)
+  })
+})
+
+describe('SetEffectsCommand', () => {
+  it('adds an effect and restores the empty list on undo', () => {
+    const document = scene(rectangle('a'))
+    const command = SetEffectsCommand.forNodes(document, ['a'], () => [DEFAULT_DROP_SHADOW])
+    command?.execute()
+    expect(document.getNode('a')?.effects).toEqual([DEFAULT_DROP_SHADOW])
+    command?.undo()
+    expect(document.getNode('a')?.effects).toEqual([])
+  })
+
+  it('does not share effect objects with the document', () => {
+    const document = scene(rectangle('a'))
+    const effects = [DEFAULT_DROP_SHADOW]
+    SetEffectsCommand.forNodes(document, ['a'], () => effects)?.execute()
+    effects[0]!.color.r = 200
+    expect(document.getNode('a')?.effects[0]?.color.r).toBe(0)
+  })
+
+  it('merges continuations into one command', () => {
+    const document = scene(rectangle('a'))
+    const first = SetEffectsCommand.forNodes(document, ['a'], () => [DEFAULT_DROP_SHADOW], {
+      mergeable: true,
+    })!
+    const second = SetEffectsCommand.forNodes(document, ['a'], () => [{ ...DEFAULT_DROP_SHADOW, blur: 20 }], {
+      mergeable: true,
+    })!
+    expect(first.mergeWith(second)).toBe(true)
+    first.execute()
+    expect(document.getNode('a')?.effects[0]?.blur).toBe(20)
+    first.undo()
+    expect(document.getNode('a')?.effects).toEqual([])
   })
 })
 

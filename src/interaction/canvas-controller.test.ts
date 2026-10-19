@@ -131,6 +131,7 @@ function createRectangle(id: string, x: number, y: number, size = 100): Rectangl
     constrainProportions: false,
     strokes: [],
     strokeWeight: 0,
+    effects: [],
     fills: [],
     cornerRadius: 0,
   }

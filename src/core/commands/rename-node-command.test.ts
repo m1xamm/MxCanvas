@@ -20,6 +20,7 @@ function createRectangle(id: string, name: string): RectangleNode {
     constrainProportions: false,
     strokes: [],
     strokeWeight: 0,
+    effects: [],
     fills: [],
     cornerRadius: 0,
   }

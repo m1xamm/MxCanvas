@@ -52,6 +52,27 @@ const STROKE_ADD_LABEL = 'Добавить обводку'
 const STROKE_WEIGHT_LABEL = 'Толщина обводки'
 const RIGHT_PANEL = '.side-panel--right'
 
+const EFFECT_RECT = { start: { x: 360, y: 690 }, end: { x: 720, y: 810 } }
+const EFFECT_ADD_LABEL = 'Добавить эффект'
+const EFFECT_OFFSET_Y_LABEL = 'Смещение по Y'
+const EFFECT_BLUR_LABEL = 'Размытие'
+const EFFECT_SPREAD_LABEL = 'Размах'
+const EFFECT_OFFSET_Y = '16'
+const EFFECT_BLUR = '16'
+const EFFECT_SPREAD = '8'
+const EFFECT_ZOOM_DELTA = GRID_ZOOM_WHEEL_DELTA * 2
+const EFFECT_COLOR_LABEL = 'Цвет тени'
+const EFFECT_HEX = 'FF8A3D'
+const EFFECT_OPACITY_PERCENT = 100
+const EFFECT_CROP = {
+  x: EFFECT_RECT.start.x - 48,
+  y: EFFECT_RECT.start.y - 48,
+  width: 416,
+  height: 256,
+}
+const FILL_OPACITY_HIDDEN = '0'
+const FILL_OPACITY_SHOWN = '100'
+
 async function withPage(viewport, run) {
   const server = await createServer({ server: { port: 5199, strictPort: true } })
   await server.listen()
@@ -131,8 +152,8 @@ async function tabUntil(page, expression) {
   throw new Error(`Tab did not reach ${expression}`)
 }
 
-async function zoomWithWheel(page, deltaY) {
-  await page.mouse.move(GRID_CENTER.x, GRID_CENTER.y)
+async function zoomWithWheel(page, deltaY, point = GRID_CENTER) {
+  await page.mouse.move(point.x, point.y)
   await page.keyboard.down('Control')
   await page.mouse.wheel(0, deltaY)
   await page.keyboard.up('Control')
@@ -336,6 +357,57 @@ async function runSnapShots(page) {
   await capture(page, 'snap-guides-result')
 }
 
+async function runEffectsShots(page) {
+  await page.evaluate('document.activeElement?.blur()')
+  await drawRectangle(page, EFFECT_RECT.start, EFFECT_RECT.end)
+  await parkPointer(page)
+  await page.getByLabel(EFFECT_ADD_LABEL).click()
+  await parkPointer(page)
+  await capture(page, 'effect-added')
+  await captureElement(page, RIGHT_PANEL, 'panel-effect')
+
+  await fillNumberField(page, EFFECT_OFFSET_Y_LABEL, EFFECT_OFFSET_Y)
+  await fillNumberField(page, EFFECT_BLUR_LABEL, EFFECT_BLUR)
+  await fillNumberField(page, EFFECT_SPREAD_LABEL, EFFECT_SPREAD)
+  await pickEffectColor(page)
+  await parkPointer(page)
+  await capture(page, 'effect-shadow')
+  await captureCrop(page, 'effect-shadow-zoom', EFFECT_CROP)
+  const fillOpacity = page.locator('.paint-row').first().locator('.field__input').nth(1)
+  await fillField(fillOpacity, FILL_OPACITY_HIDDEN)
+  await parkPointer(page)
+  await captureCrop(page, 'effect-no-fill', EFFECT_CROP)
+  await fillField(fillOpacity, FILL_OPACITY_SHOWN)
+  await zoomWithWheel(page, EFFECT_ZOOM_DELTA, {
+    x: (EFFECT_RECT.start.x + EFFECT_RECT.end.x) / 2,
+    y: (EFFECT_RECT.start.y + EFFECT_RECT.end.y) / 2,
+  })
+  await capture(page, 'effect-shadow-zoomed')
+  await page.keyboard.press('Shift+Digit0')
+}
+
+async function pickEffectColor(page) {
+  await page.getByLabel(EFFECT_COLOR_LABEL).click()
+  await page.locator('.color-picker').waitFor()
+  const hex = page.locator('.color-picker input').first()
+  await hex.fill(EFFECT_HEX)
+  await hex.press('Enter')
+  const alpha = page.locator('.color-picker input').nth(1)
+  await alpha.fill(String(EFFECT_OPACITY_PERCENT))
+  await alpha.press('Enter')
+  await page.keyboard.press('Escape')
+}
+
+async function fillNumberField(page, label, value) {
+  await fillField(page.getByLabel(label), value)
+}
+
+async function fillField(field, value) {
+  await field.click()
+  await field.fill(value)
+  await field.press('Enter')
+}
+
 async function runShots(page) {
   await capture(page, 'initial')
   await captureCrop(page, 'logo-crop', { x: 6, y: 6, width: 52, height: 52 })
@@ -373,6 +445,7 @@ async function runShots(page) {
   await runMixedPropertiesShots(page)
   await runSnapShots(page)
   await runPaintShots(page)
+  await runEffectsShots(page)
 }
 
 await clearOutputDir()

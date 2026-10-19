@@ -7,6 +7,7 @@ import { ResizeNodesCommand } from '../core/commands/resize-nodes-command'
 import { SetConstrainProportionsCommand } from '../core/commands/set-constrain-proportions-command'
 import { SetCornerRadiusCommand } from '../core/commands/set-corner-radius-command'
 import { SetFillsCommand } from '../core/commands/set-fills-command'
+import { SetEffectsCommand } from '../core/commands/set-effects-command'
 import { SetNodeLockedCommand } from '../core/commands/set-node-locked-command'
 import { SetNodeVisibleCommand } from '../core/commands/set-node-visible-command'
 import { SetOpacityCommand } from '../core/commands/set-opacity-command'
@@ -15,9 +16,17 @@ import { SetStrokesCommand } from '../core/commands/set-strokes-command'
 import type { NodeBoxChange } from '../core/commands/node-box-change'
 import { clamp01, clonePaint, clonePaints } from '../core/color'
 import { createRectangleNode, DEFAULT_FILL, DEFAULT_STROKE } from '../core/document/create-node'
+import { cloneEffect, cloneEffects, DEFAULT_DROP_SHADOW } from '../core/effects'
 import { Document } from '../core/document/document'
-import type { NodeId, Paint, RectangleNode, RgbColor, SceneNodeUnion } from '../core/document/types'
-import { paintIndexForRow } from '../core/paints'
+import type {
+  DropShadowEffect,
+  NodeId,
+  Paint,
+  RectangleNode,
+  RgbColor,
+  SceneNodeUnion,
+} from '../core/document/types'
+import { stackIndexForRow } from '../core/stack'
 import { planLayerReorder, siblingGroups, type LayerMove, type LayerOrderMode } from '../core/layers'
 import type { Vec2 } from '../core/math/matrix'
 import type { Rect } from '../core/math/rect'
@@ -181,13 +190,78 @@ function applySelectionPaints(
 }
 
 function removePaintAt(paints: readonly Paint[], row: number): Paint[] {
-  const index = paintIndexForRow(paints.length, row)
+  const index = stackIndexForRow(paints.length, row)
   return paints.filter((_paint, at) => at !== index).map(clonePaint)
 }
 
 function updatePaintAt(paints: readonly Paint[], row: number, update: (paint: Paint) => Paint): Paint[] {
-  const index = paintIndexForRow(paints.length, row)
+  const index = stackIndexForRow(paints.length, row)
   return paints.map((paint, at) => (at === index ? update(clonePaint(paint)) : clonePaint(paint)))
+}
+
+export function addSelectionEffect(): void {
+  applySelectionEffects((node) => [...cloneEffects(node.effects), cloneEffect(DEFAULT_DROP_SHADOW)])
+}
+
+export function removeSelectionEffect(row: number): void {
+  applySelectionEffects((node) => {
+    const index = stackIndexForRow(node.effects.length, row)
+    return node.effects.filter((_effect, at) => at !== index).map(cloneEffect)
+  })
+}
+
+export function setSelectionEffectColor(row: number, color: RgbColor, live = false): void {
+  updateSelectionEffect(row, (effect) => ({ ...effect, color }), live)
+}
+
+export function setSelectionEffectOpacity(row: number, opacity: number, live = false): void {
+  updateSelectionEffect(row, (effect) => ({ ...effect, opacity: clamp01(opacity) }), live)
+}
+
+export function setSelectionEffectOffset(row: number, axis: 'x' | 'y', value: number, live = false): void {
+  updateSelectionEffect(
+    row,
+    (effect) => (axis === 'x' ? { ...effect, offsetX: value } : { ...effect, offsetY: value }),
+    live,
+  )
+}
+
+export function setSelectionEffectBlur(row: number, blur: number, live = false): void {
+  updateSelectionEffect(row, (effect) => ({ ...effect, blur: Math.max(0, blur) }), live)
+}
+
+export function setSelectionEffectSpread(row: number, spread: number, live = false): void {
+  updateSelectionEffect(row, (effect) => ({ ...effect, spread }), live)
+}
+
+export function setSelectionEffectVisible(row: number, visible: boolean): void {
+  updateSelectionEffect(row, (effect) => ({ ...effect, visible }))
+}
+
+function updateSelectionEffect(
+  row: number,
+  update: (effect: DropShadowEffect) => DropShadowEffect,
+  live = false,
+): void {
+  applySelectionEffects(
+    (node) => {
+      const index = stackIndexForRow(node.effects.length, row)
+      return node.effects.map((effect, at) =>
+        at === index ? update(cloneEffect(effect)) : cloneEffect(effect),
+      )
+    },
+    live,
+  )
+}
+
+function applySelectionEffects(
+  update: (node: SceneNodeUnion) => DropShadowEffect[],
+  live = false,
+): void {
+  const ids = selectionStore.get()
+  if (ids.length === 0) return
+  const command = SetEffectsCommand.forNodes(scene, ids, update, { mergeable: live })
+  if (command) history.execute(command)
 }
 
 export function deleteSelection(): void {
