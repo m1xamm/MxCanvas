@@ -1,6 +1,7 @@
-import type { FrameInfo } from './frame-state'
+import type { SceneReader } from '../core/document/types'
+import type { FrameState } from './frame-state'
 
-type FrameObserver = (info: FrameInfo) => void
+type FrameObserver = (state: FrameState, scene: SceneReader) => void
 
 interface FrameObserverHost {
   __mxFrameObserver?: FrameObserver
@@ -16,7 +17,7 @@ export function hasFrameObserver(): boolean {
   return host.__mxFrameObserver !== undefined
 }
 
-export function publishFrame(info: FrameInfo): void {
+export function publishFrame(state: FrameState, scene: SceneReader): void {
   if (!import.meta.env.DEV) return
-  host.__mxFrameObserver?.(info)
+  host.__mxFrameObserver?.(state, scene)
 }

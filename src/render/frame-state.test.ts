@@ -30,6 +30,8 @@ function createRectangle(id: string, x: number, y: number, size = 100): Rectangl
 function state(overrides: Partial<FrameState> = {}): FrameState {
   return {
     time: 16,
+    duration: 1,
+    drawnNodes: 0,
     selection: [],
     hoveredId: null,
     hoveredHandle: null,

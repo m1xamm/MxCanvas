@@ -11,5 +11,6 @@ export function traceNodeRect(
   const maxRadius = Math.min(width, height) * MAX_CORNER_RADIUS_FACTOR
   const radius = Math.max(0, Math.min(node.cornerRadius, maxRadius))
   context.beginPath()
-  context.roundRect(0, 0, width, height, radius)
+  if (radius === 0) context.rect(0, 0, width, height)
+  else context.roundRect(0, 0, width, height, radius)
 }

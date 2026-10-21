@@ -1,4 +1,5 @@
 import type { FrameInfo } from '../render/frame-state'
+import { frameInfoOf } from '../render/frame-state'
 import { setFrameObserver } from '../render/frame-observer'
 import { selectionStore } from '../interaction/selection'
 import type { NodeId, SceneNodeUnion } from '../core/document/types'
@@ -40,15 +41,17 @@ interface DevDebugApi {
   selection: () => readonly string[]
   history: () => DevHistoryDepth
   nodes: () => DevNodeSummary[]
+  setBoxRecording: (enabled: boolean) => void
 }
 
 const frames: DevFrame[] = []
 let frameIndex = 0
+let recordBoxes = true
 
-setFrameObserver((info) => {
+setFrameObserver((state, scene) => {
   frameIndex += 1
   frames.push({
-    ...info,
+    ...frameInfoOf(scene, state, { selectedBoxes: recordBoxes }),
     frame: frameIndex,
     undoDepth: history.undoDepth,
     redoDepth: history.redoDepth,
@@ -102,6 +105,9 @@ const api: DevDebugApi = {
     return { undo: history.undoDepth, redo: history.redoDepth }
   },
   nodes: nodeSummaries,
+  setBoxRecording(enabled: boolean) {
+    recordBoxes = enabled
+  },
 }
 
 declare global {

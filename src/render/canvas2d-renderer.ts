@@ -1,7 +1,7 @@
 import { DEFAULT_FILL } from '../core/document/create-node'
-import type { NodeId, SceneNodeUnion, SceneReader } from '../core/document/types'
+import type { DropShadowEffect, NodeId, SceneNodeUnion, SceneReader } from '../core/document/types'
 import { canvasGrid } from '../core/canvas-grid'
-import { paintToCss } from '../core/color'
+import { paintToCss, withAlphaColor } from '../core/color'
 import { pixelGrid } from '../core/pixel-grid'
 import { applyToPoint, multiply, scaling, type Mat2D, type Vec2 } from '../core/math/matrix'
 import { transformRect, type Rect } from '../core/math/rect'
@@ -12,7 +12,7 @@ import type { ResizeHandleId } from '../interaction/resize'
 import { collectVisibleNodes } from './culling'
 import { DropShadowPass } from './drop-shadow-pass'
 import { hasFrameObserver, publishFrame } from './frame-observer'
-import { frameInfoOf, type FrameState } from './frame-state'
+import type { FrameState } from './frame-state'
 import { traceNodeRect } from './node-path'
 import type { Renderer } from './renderer'
 import {
@@ -25,6 +25,7 @@ import { readThemeColors, type ThemeColors } from './theme-colors'
 const OUTLINE_SCREEN_PX = 1
 const DRAFT_FILL_ALPHA = 0.6
 const GUIDE_MARKER_ARM_PX = 4
+const MAX_OUTLINED_SELECTION = 500
 const NO_SNAP_GUIDES: readonly SnapGuide[] = []
 
 export interface Canvas2DRendererOptions {
@@ -65,6 +66,8 @@ export class Canvas2DRenderer implements Renderer {
   #visibleNodes: SceneNodeUnion[] = []
   #frame: FrameState = {
     time: 0,
+    duration: 0,
+    drawnNodes: 0,
     selection: [],
     hoveredId: null,
     hoveredHandle: null,
@@ -79,11 +82,15 @@ export class Canvas2DRenderer implements Renderer {
   #hoveredHandle: ResizeHandleId | null = null
   #hoverStartedAt = 0
   #shadowPass: DropShadowPass
+  #deviceTransform: Mat2D = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
+  #alpha = 1
+  #fillStyle = ''
+  #strokeStyle = ''
   #dirty = false
   #frameHandle = 0
 
   constructor(canvas: HTMLCanvasElement, viewport: Viewport, options: Canvas2DRendererOptions) {
-    const context = canvas.getContext('2d')
+    const context = canvas.getContext('2d', { alpha: false })
     if (!context) throw new Error('Canvas 2D context is unavailable')
     this.#canvas = canvas
     this.#context = context
@@ -126,6 +133,7 @@ export class Canvas2DRenderer implements Renderer {
   }
 
   #draw = (time: number): void => {
+    const startedAt = performance.now()
     const context = this.#context
     this.#dirty = false
     const frame = this.#snapshotFrame(time)
@@ -140,9 +148,13 @@ export class Canvas2DRenderer implements Renderer {
     this.#shadowPass.setScale(this.#viewport.zoom, this.#devicePixelRatio)
     this.#drawGrid(deviceViewport)
     this.#drawPixelGrid(deviceViewport)
+    this.#alpha = context.globalAlpha
+    this.#fillStyle = ''
+    this.#strokeStyle = ''
     for (const node of collectVisibleNodes(this.#scene, this.#viewportWorldBounds(), this.#visibleNodes)) {
       this.#drawNode(node, deviceViewport)
     }
+    frame.drawnNodes = this.#visibleNodes.length
     this.#drawHoverOutline(deviceViewport)
     this.#drawSelectionOutline(deviceViewport)
     this.#drawMarquee()
@@ -158,7 +170,8 @@ export class Canvas2DRenderer implements Renderer {
       hoveredHandle,
       hoverScale: this.#hoverScale(hoveredHandle, time),
     })
-    if (hasFrameObserver()) publishFrame(frameInfoOf(this.#scene, frame))
+    frame.duration = performance.now() - startedAt
+    if (hasFrameObserver()) publishFrame(frame, this.#scene)
   }
 
   #snapshotFrame(time: number): FrameState {
@@ -233,27 +246,84 @@ export class Canvas2DRenderer implements Renderer {
 
   #drawNode(node: SceneNodeUnion, deviceViewport: Mat2D): void {
     const context = this.#context
-    const preview = this.#frame.previews.get(node.id)
+    const previews = this.#frame.previews
+    const preview = previews.size > 0 ? previews.get(node.id) : undefined
     const box: NodeBox = preview ?? node
-    const transform = multiply(deviceViewport, this.#nodeWorldTransform(node, preview))
-    if (node.effects.length > 0) this.#shadowPass.draw(node, box, transform)
+    const world = preview
+      ? boxWorldTransform(this.#scene, node, preview)
+      : this.#scene.getWorldTransform(node.id)
+    const transform = this.#composeDeviceTransform(deviceViewport, world)
+    const shadow = this.#fastShadow(node)
+    if (node.effects.length > 0 && !shadow) {
+      this.#shadowPass.draw(node, box, transform)
+      this.#alpha = 1
+    }
     this.#applyTransform(transform)
     this.#traceNodePath(node, box.width, box.height)
-    context.globalAlpha = node.opacity
+    this.#applyAlpha(node.opacity)
+    if (shadow) this.#enableShadow(shadow)
     for (const paint of node.fills) {
       if (!paint.visible) continue
-      context.fillStyle = paintToCss(paint)
+      this.#setFillStyle(paintToCss(paint))
       context.fill()
     }
     if (node.strokeWeight > 0) {
       context.lineWidth = node.strokeWeight
       for (const paint of node.strokes) {
         if (!paint.visible) continue
-        context.strokeStyle = paintToCss(paint)
+        this.#setStrokeStyle(paintToCss(paint))
         context.stroke()
       }
     }
-    context.globalAlpha = 1
+    if (shadow) this.#disableShadow()
+    this.#applyAlpha(1)
+  }
+
+  #applyAlpha(value: number): void {
+    if (this.#alpha === value) return
+    this.#alpha = value
+    this.#context.globalAlpha = value
+  }
+
+  #setFillStyle(value: string): void {
+    if (this.#fillStyle === value) return
+    this.#fillStyle = value
+    this.#context.fillStyle = value
+  }
+
+  #setStrokeStyle(value: string): void {
+    if (this.#strokeStyle === value) return
+    this.#strokeStyle = value
+    this.#context.strokeStyle = value
+  }
+
+  #fastShadow(node: SceneNodeUnion): DropShadowEffect | null {
+    if (node.effects.length !== 1) return null
+    const effect = node.effects[0]
+    if (!effect || !effect.visible || effect.spread !== 0) return null
+    if (node.strokeWeight > 0 && node.strokes.some((paint) => paint.visible)) return null
+    let fillCount = 0
+    for (const paint of node.fills) {
+      if (paint.visible) fillCount += 1
+    }
+    return fillCount === 1 ? effect : null
+  }
+
+  #enableShadow(effect: DropShadowEffect): void {
+    const context = this.#context
+    const scale = this.#viewport.zoom * this.#devicePixelRatio
+    context.shadowColor = withAlphaColor(effect.color, effect.opacity)
+    context.shadowBlur = effect.blur * scale
+    context.shadowOffsetX = effect.offsetX * scale
+    context.shadowOffsetY = effect.offsetY * scale
+  }
+
+  #disableShadow(): void {
+    const context = this.#context
+    context.shadowColor = 'transparent'
+    context.shadowBlur = 0
+    context.shadowOffsetX = 0
+    context.shadowOffsetY = 0
   }
 
   #drawHoverOutline(deviceViewport: Mat2D): void {
@@ -271,15 +341,19 @@ export class Canvas2DRenderer implements Renderer {
   }
 
   #drawSelectionOutline(deviceViewport: Mat2D): void {
+    const selection = this.#frame.selection
+    if (selection.length > MAX_OUTLINED_SELECTION) return
     const context = this.#context
     context.strokeStyle = this.#colors.primary
     context.lineWidth = OUTLINE_SCREEN_PX / this.#viewport.zoom
-    for (const id of this.#frame.selection) {
+    for (const id of selection) {
       const node = this.#scene.getNode(id)
       if (!node || !node.visible) continue
       const preview = this.#frame.previews.get(id)
       const box: NodeBox = preview ?? node
-      this.#applyTransform(multiply(deviceViewport, this.#nodeWorldTransform(node, preview)))
+      this.#applyTransform(
+        this.#composeDeviceTransform(deviceViewport, this.#nodeWorldTransform(node, preview)),
+      )
       this.#traceNodePath(node, box.width, box.height)
       context.stroke()
     }
@@ -375,6 +449,17 @@ export class Canvas2DRenderer implements Renderer {
 
   #applyTransform(matrix: Mat2D): void {
     this.#context.setTransform(matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f)
+  }
+
+  #composeDeviceTransform(left: Mat2D, right: Mat2D): Mat2D {
+    const out = this.#deviceTransform
+    out.a = left.a * right.a + left.c * right.b
+    out.b = left.b * right.a + left.d * right.b
+    out.c = left.a * right.c + left.c * right.d
+    out.d = left.b * right.c + left.d * right.d
+    out.e = left.a * right.e + left.c * right.f + left.e
+    out.f = left.b * right.e + left.d * right.f + left.f
+    return out
   }
 
   #applyScreenTransform(): void {

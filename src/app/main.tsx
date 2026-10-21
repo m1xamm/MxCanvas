@@ -11,4 +11,7 @@ if (!rootElement) throw new Error('Root element #app is missing')
 
 render(<App />, rootElement)
 
-if (import.meta.env.DEV) void import('./dev-debug')
+if (import.meta.env.DEV) {
+  void import('./dev-debug')
+  void import('./stress-scene').then((module) => module.loadStressSceneFromLocation())
+}

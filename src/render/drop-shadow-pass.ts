@@ -46,17 +46,45 @@ export class DropShadowPass {
   draw(node: SceneNodeUnion, box: NodeBox, transform: Mat2D): void {
     const bounds = this.#bounds(box, transform)
     if (!bounds) return
-    const mask = this.#reserveSurface('mask', bounds)
-    this.#paintSilhouette(mask, node, box, transform, bounds)
     const worldToDevice = this.#zoom * this.#devicePixelRatio
+    const first = node.effects.find((effect) => effect.visible)
+    if (!first) return
+    const layered = node.effects.some((effect) => effect.visible && effect !== first)
+    if (!layered) {
+      const tint = this.#reserveSurface('tint', bounds)
+      this.#paintSilhouette(tint, node, box, transform, bounds, withAlphaColor(first.color, 1))
+      this.#composite(node.opacity, bounds, first, tint, worldToDevice)
+      return
+    }
+    const mask = this.#reserveSurface('mask', bounds)
+    this.#paintSilhouette(mask, node, box, transform, bounds, SILHOUETTE_COLOR)
     for (const effect of node.effects) {
       if (!effect.visible) continue
-      const tint = this.#tintSurface(bounds, effect.color)
-      this.#paintShadow(node.opacity, bounds, effect, tint, worldToDevice)
+      const tint = this.#reserveSurface('tint', bounds)
+      this.#tintSurface(tint, mask, bounds, effect.color)
+      this.#composite(node.opacity, bounds, effect, tint, worldToDevice)
     }
   }
 
-  #paintShadow(
+  #tintSurface(tint: EffectSurface, mask: EffectSurface, bounds: EffectBounds, color: RgbColor): void {
+    tint.context.drawImage(
+      mask.canvas,
+      0,
+      0,
+      bounds.width,
+      bounds.height,
+      0,
+      0,
+      bounds.width,
+      bounds.height,
+    )
+    tint.context.globalCompositeOperation = 'source-in'
+    tint.context.fillStyle = withAlphaColor(color, 1)
+    tint.context.fillRect(0, 0, bounds.width, bounds.height)
+    tint.context.globalCompositeOperation = 'source-over'
+  }
+
+  #composite(
     nodeOpacity: number,
     bounds: EffectBounds,
     effect: DropShadowEffect,
@@ -64,37 +92,46 @@ export class DropShadowPass {
     worldToDevice: number,
   ): void {
     const context = this.#context
-    context.save()
+    const blur = effect.blur * worldToDevice * BLUR_SIGMA_FACTOR
+    const offsetX = effect.offsetX * worldToDevice
+    const offsetY = effect.offsetY * worldToDevice
     context.setTransform(1, 0, 0, 1, 0, 0)
     context.globalAlpha = Math.min(1, nodeOpacity * effect.opacity)
-    if (effect.blur > 0) {
-      context.filter = `blur(${effect.blur * worldToDevice * BLUR_SIGMA_FACTOR}px)`
-    }
-    context.translate(
-      bounds.x + bounds.width / 2 + effect.offsetX * worldToDevice,
-      bounds.y + bounds.height / 2 + effect.offsetY * worldToDevice,
-    )
-    if (effect.spread !== 0) {
+    if (blur > 0) context.filter = `blur(${blur}px)`
+    if (effect.spread === 0) {
+      context.drawImage(
+        tint.canvas,
+        0,
+        0,
+        bounds.width,
+        bounds.height,
+        bounds.x + offsetX,
+        bounds.y + offsetY,
+        bounds.width,
+        bounds.height,
+      )
+    } else {
+      const spread = effect.spread * 2 * worldToDevice
+      context.translate(bounds.x + bounds.width / 2 + offsetX, bounds.y + bounds.height / 2 + offsetY)
       context.scale(
-        (bounds.width + effect.spread * 2 * worldToDevice) / bounds.width,
-        (bounds.height + effect.spread * 2 * worldToDevice) / bounds.height,
+        (bounds.width + spread) / bounds.width,
+        (bounds.height + spread) / bounds.height,
+      )
+      context.translate(-bounds.width / 2, -bounds.height / 2)
+      context.drawImage(
+        tint.canvas,
+        0,
+        0,
+        bounds.width,
+        bounds.height,
+        0,
+        0,
+        bounds.width,
+        bounds.height,
       )
     }
-    context.translate(-bounds.width / 2, -bounds.height / 2)
-    context.drawImage(tint.canvas, 0, 0, bounds.width, bounds.height, 0, 0, bounds.width, bounds.height)
-    context.restore()
-  }
-
-  #tintSurface(bounds: EffectBounds, color: RgbColor): EffectSurface {
-    const mask = this.#mask
-    const tint = this.#reserveSurface('tint', bounds)
-    if (!mask) return tint
-    tint.context.drawImage(mask.canvas, 0, 0, bounds.width, bounds.height, 0, 0, bounds.width, bounds.height)
-    tint.context.globalCompositeOperation = 'source-in'
-    tint.context.fillStyle = withAlphaColor(color, 1)
-    tint.context.fillRect(0, 0, bounds.width, bounds.height)
-    tint.context.globalCompositeOperation = 'source-over'
-    return tint
+    if (blur > 0) context.filter = 'none'
+    context.globalAlpha = 1
   }
 
   #paintSilhouette(
@@ -103,11 +140,19 @@ export class DropShadowPass {
     box: NodeBox,
     transform: Mat2D,
     bounds: EffectBounds,
+    color: string,
   ): void {
     const context = surface.context
-    context.setTransform(transform.a, transform.b, transform.c, transform.d, transform.e - bounds.x, transform.f - bounds.y)
-    context.fillStyle = SILHOUETTE_COLOR
-    context.strokeStyle = SILHOUETTE_COLOR
+    context.setTransform(
+      transform.a,
+      transform.b,
+      transform.c,
+      transform.d,
+      transform.e - bounds.x,
+      transform.f - bounds.y,
+    )
+    context.fillStyle = color
+    context.strokeStyle = color
     traceNodeRect(context, node, box.width, box.height)
     context.fill()
     if (node.strokeWeight > 0) {

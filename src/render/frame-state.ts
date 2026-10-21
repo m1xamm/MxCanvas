@@ -18,6 +18,8 @@ export interface FrameViewport {
 
 export interface FrameState {
   time: number
+  duration: number
+  drawnNodes: number
   selection: readonly NodeId[]
   hoveredId: NodeId | null
   hoveredHandle: ResizeHandleId | null
@@ -32,6 +34,8 @@ export interface FrameState {
 
 export interface FrameInfo {
   time: number
+  duration: number
+  drawnNodes: number
   selection: readonly NodeId[]
   hoveredId: NodeId | null
   hoveredHandle: ResizeHandleId | null
@@ -44,9 +48,20 @@ export interface FrameInfo {
   selectedBoxes: readonly FrameNodeBox[]
 }
 
-export function frameInfoOf(scene: SceneReader, state: FrameState): FrameInfo {
+export interface FrameInfoOptions {
+  selectedBoxes?: boolean
+}
+
+export function frameInfoOf(
+  scene: SceneReader,
+  state: FrameState,
+  options: FrameInfoOptions = {},
+): FrameInfo {
+  const recordBoxes = options.selectedBoxes ?? true
   return {
     time: state.time,
+    duration: state.duration,
+    drawnNodes: state.drawnNodes,
     selection: [...state.selection],
     hoveredId: state.hoveredId,
     hoveredHandle: state.hoveredHandle,
@@ -56,10 +71,12 @@ export function frameInfoOf(scene: SceneReader, state: FrameState): FrameInfo {
     snapGuides: state.snapGuides.map(copyGuide),
     pointer: state.pointer ? { ...state.pointer } : null,
     viewport: { ...state.viewport },
-    selectedBoxes: selectedBoxesOf(scene, state).map((box) => ({
-      id: box.id,
-      rect: { ...box.rect },
-    })),
+    selectedBoxes: recordBoxes
+      ? selectedBoxesOf(scene, state).map((box) => ({
+          id: box.id,
+          rect: { ...box.rect },
+        }))
+      : [],
   }
 }
 
