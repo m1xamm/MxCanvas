@@ -137,6 +137,7 @@ export class SelectionTool {
   pointerDown(input: SelectionPointerInput): void {
     this.#setHoveredId(null)
     this.#setHoveredHandle(null)
+    this.#snapGuides = NO_SNAP_GUIDES
     const selection = this.#options.getSelection()
     const bounds = this.#selectedRect()
     const handle = bounds ? handleAtPoint(this.#screenRect(bounds), input.screen) : null
@@ -254,9 +255,15 @@ export class SelectionTool {
     world: Vec2,
     input: { screen: Vec2; shiftKey: boolean; ctrlKey: boolean },
   ): void {
-    if (!gesture.moved && !isDrag(gesture.startScreen, input.screen)) return
-    gesture.moved = true
-    gesture.delta = this.#snappedDelta(gesture, moveDelta(gesture.startWorld, world, input.shiftKey), input.ctrlKey)
+    const dragging = gesture.moved || isDrag(gesture.startScreen, input.screen)
+    if (dragging) gesture.moved = true
+    const rawDelta = moveDelta(gesture.startWorld, world, input.shiftKey)
+    if (dragging) {
+      gesture.delta = this.#snappedDelta(gesture, rawDelta, input.ctrlKey)
+    } else {
+      gesture.delta = rawDelta
+      this.#snapGuides = NO_SNAP_GUIDES
+    }
     this.#previews = previewsFor(this.#scene, gesture.origins, gesture.delta)
     this.#previewBounds = gesture.startBounds
       ? translateRect(gesture.startBounds, gesture.delta)
@@ -286,8 +293,8 @@ export class SelectionTool {
   }
 
   #updateResize(gesture: ResizeGesture, world: Vec2, input: SelectionPointerInput): void {
-    if (!gesture.moved && !isDrag(gesture.startScreen, input.screen)) return
-    gesture.moved = true
+    const dragging = gesture.moved || isDrag(gesture.startScreen, input.screen)
+    if (dragging) gesture.moved = true
     const proportional = input.shiftKey || this.#constrainProportions()
     const request = {
       bounds: gesture.startBounds,
@@ -297,7 +304,8 @@ export class SelectionTool {
       fromCenter: input.altKey,
     }
     const raw = resizeBounds(request)
-    const snapped = this.#snapResize(gesture, raw, request, input.ctrlKey)
+    if (!dragging) this.#snapGuides = NO_SNAP_GUIDES
+    const snapped = dragging ? this.#snapResize(gesture, raw, request, input.ctrlKey) : raw
     gesture.rawBounds = snapped
     this.#previews = resizedBoxesFor(
       this.#scene,

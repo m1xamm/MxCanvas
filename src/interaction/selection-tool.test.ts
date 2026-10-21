@@ -3,8 +3,9 @@ import type { NodeBoxChange } from '../core/commands/node-box-change'
 import { Document } from '../core/document/document'
 import type { NodeId, RectangleNode } from '../core/document/types'
 import { translation, type Vec2 } from '../core/math/matrix'
+import type { SnapGuide } from '../core/snap'
 import { Viewport } from '../core/viewport'
-import { SelectionTool, type SelectionPointerInput } from './selection-tool'
+import { SelectionTool, type SelectionPointerInput, type SelectionSnap } from './selection-tool'
 
 function createRectangle(id: string, x: number, y: number, size = 100): RectangleNode {
   return {
@@ -42,7 +43,7 @@ function pointer(
   }
 }
 
-function setup() {
+function setup(snap?: SelectionSnap) {
   const scene = new Document()
   const viewport = new Viewport()
   let selection: readonly NodeId[] = []
@@ -60,6 +61,7 @@ function setup() {
     onMoveSelection,
     onResizeSelection,
     onOverlayChange,
+    snap,
   })
   return {
     scene,
@@ -216,6 +218,39 @@ describe('SelectionTool move', () => {
     tool.pointerUp(pointer(51, 52))
     expect(onMoveSelection).not.toHaveBeenCalled()
     expect(getSelection()).toEqual(['a'])
+  })
+
+  it('previews every sub-threshold move without committing it', () => {
+    const { scene, tool, onMoveSelection } = setup()
+    scene.addNode(createRectangle('a', 0, 0))
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerMove(pointer(51, 52))
+    expect(tool.previews.get('a')).toEqual({
+      transform: translation(1, 2),
+      width: 100,
+      height: 100,
+    })
+    expect(tool.selectionBounds).toEqual({ x: 1, y: 2, width: 100, height: 100 })
+    tool.pointerUp(pointer(51, 52))
+    expect(onMoveSelection).not.toHaveBeenCalled()
+  })
+
+  it('holds snapping until the drag threshold is crossed', () => {
+    const guides: SnapGuide[] = [{ axis: 'x', position: 0, from: 0, to: 100 }]
+    const snap = vi.fn<SelectionSnap>((rect) => ({ rect, guides }))
+    const { scene, tool } = setup(snap)
+    scene.addNode(createRectangle('a', 0, 0))
+    tool.pointerDown(pointer(50, 50))
+    tool.pointerMove(pointer(51, 52))
+    expect(snap).not.toHaveBeenCalled()
+    expect(tool.snapGuides).toEqual([])
+    tool.pointerMove(pointer(80, 70))
+    expect(snap).toHaveBeenCalled()
+    expect(tool.snapGuides).toEqual(guides)
+    tool.pointerUp(pointer(80, 70))
+    expect(tool.snapGuides).toEqual([])
+    tool.pointerDown(pointer(50, 50))
+    expect(tool.snapGuides).toEqual([])
   })
 
   it('locks the movement to the dominant axis with shift', () => {
@@ -391,6 +426,11 @@ describe('SelectionTool resize', () => {
     tool.pointerUp(pointer(50, 50))
     tool.pointerDown(pointer(100, 100))
     tool.pointerMove(pointer(101, 101))
+    expect(tool.previews.get('a')).toEqual({
+      transform: translation(0, 0),
+      width: 101,
+      height: 101,
+    })
     tool.pointerUp(pointer(101, 101))
     expect(onResizeSelection).not.toHaveBeenCalled()
     expect(getSelection()).toEqual(['a'])

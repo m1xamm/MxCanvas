@@ -74,6 +74,7 @@ export class Canvas2DRenderer implements Renderer {
     draft: null,
     snapGuides: NO_SNAP_GUIDES,
     pointer: null,
+    viewport: { x: 0, y: 0, zoom: 1 },
   }
   #hoveredHandle: ResizeHandleId | null = null
   #hoverStartedAt = 0
@@ -172,6 +173,9 @@ export class Canvas2DRenderer implements Renderer {
     frame.draft = this.#getDraft()
     frame.snapGuides = this.#getSnapGuides()
     frame.pointer = this.#getPointer()
+    frame.viewport.x = this.#viewport.pan.x
+    frame.viewport.y = this.#viewport.pan.y
+    frame.viewport.zoom = this.#viewport.zoom
     return frame
   }
 
@@ -253,6 +257,7 @@ export class Canvas2DRenderer implements Renderer {
   }
 
   #drawHoverOutline(deviceViewport: Mat2D): void {
+    if (this.#frame.hoveredHandle) return
     const id = this.#frame.hoveredId
     if (!id || this.#frame.selection.includes(id)) return
     const node = this.#scene.getNode(id)
