@@ -10,6 +10,12 @@ export interface FrameNodeBox {
   rect: Rect
 }
 
+export interface FrameViewport {
+  x: number
+  y: number
+  zoom: number
+}
+
 export interface FrameState {
   time: number
   selection: readonly NodeId[]
@@ -21,6 +27,7 @@ export interface FrameState {
   draft: Rect | null
   snapGuides: readonly SnapGuide[]
   pointer: Vec2 | null
+  viewport: FrameViewport
 }
 
 export interface FrameInfo {
@@ -33,6 +40,7 @@ export interface FrameInfo {
   draft: Rect | null
   snapGuides: readonly SnapGuide[]
   pointer: Vec2 | null
+  viewport: FrameViewport
   selectedBoxes: readonly FrameNodeBox[]
 }
 
@@ -47,6 +55,7 @@ export function frameInfoOf(scene: SceneReader, state: FrameState): FrameInfo {
     draft: copyRect(state.draft),
     snapGuides: state.snapGuides.map(copyGuide),
     pointer: state.pointer ? { ...state.pointer } : null,
+    viewport: { ...state.viewport },
     selectedBoxes: selectedBoxesOf(scene, state).map((box) => ({
       id: box.id,
       rect: { ...box.rect },

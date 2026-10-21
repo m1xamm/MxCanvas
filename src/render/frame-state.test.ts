@@ -39,6 +39,7 @@ function state(overrides: Partial<FrameState> = {}): FrameState {
     draft: null,
     snapGuides: [],
     pointer: null,
+    viewport: { x: 0, y: 0, zoom: 1 },
     ...overrides,
   }
 }
@@ -69,11 +70,14 @@ describe('frameInfoOf', () => {
     const scene = new Document()
     const draft = { x: 1, y: 2, width: 3, height: 4 }
     const pointer = { x: 10, y: 20 }
-    const info = frameInfoOf(scene, state({ draft, pointer }))
+    const viewport = { x: 5, y: 6, zoom: 2 }
+    const info = frameInfoOf(scene, state({ draft, pointer, viewport }))
     draft.x = 99
     pointer.x = 99
+    viewport.zoom = 99
     expect(info.draft).toEqual({ x: 1, y: 2, width: 3, height: 4 })
     expect(info.pointer).toEqual({ x: 10, y: 20 })
+    expect(info.viewport).toEqual({ x: 5, y: 6, zoom: 2 })
   })
 
   it('skips hidden nodes in the selected boxes', () => {

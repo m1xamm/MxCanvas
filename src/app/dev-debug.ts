@@ -1,7 +1,8 @@
 import type { FrameInfo } from '../render/frame-state'
 import { setFrameObserver } from '../render/frame-observer'
 import { selectionStore } from '../interaction/selection'
-import { history } from './editor'
+import type { NodeId, SceneNodeUnion } from '../core/document/types'
+import { history, scene } from './editor'
 
 const MAX_FRAMES = 4000
 
@@ -16,12 +17,29 @@ interface DevHistoryDepth {
   redo: number
 }
 
+interface DevNodeSummary {
+  id: NodeId
+  name: string
+  x: number
+  y: number
+  width: number
+  height: number
+  cornerRadius: number
+  visible: boolean
+  locked: boolean
+  fills: number
+  strokes: number
+  strokeWeight: number
+  effects: number
+}
+
 interface DevDebugApi {
   frames: DevFrame[]
   clear: () => void
   last: () => DevFrame | null
   selection: () => readonly string[]
   history: () => DevHistoryDepth
+  nodes: () => DevNodeSummary[]
 }
 
 const frames: DevFrame[] = []
@@ -38,6 +56,36 @@ setFrameObserver((info) => {
   if (frames.length > MAX_FRAMES) frames.splice(0, frames.length - MAX_FRAMES)
 })
 
+function nodeSummaries(): DevNodeSummary[] {
+  const summaries: DevNodeSummary[] = []
+  const visit = (node: SceneNodeUnion) => {
+    summaries.push({
+      id: node.id,
+      name: node.name,
+      x: node.transform.e,
+      y: node.transform.f,
+      width: node.width,
+      height: node.height,
+      cornerRadius: node.cornerRadius,
+      visible: node.visible,
+      locked: node.locked,
+      fills: node.fills.length,
+      strokes: node.strokes.length,
+      strokeWeight: node.strokeWeight,
+      effects: node.effects.length,
+    })
+    for (const childId of node.children) {
+      const child = scene.getNode(childId)
+      if (child) visit(child)
+    }
+  }
+  for (const rootId of scene.getRootChildren()) {
+    const node = scene.getNode(rootId)
+    if (node) visit(node)
+  }
+  return summaries
+}
+
 const api: DevDebugApi = {
   frames,
   clear() {
@@ -53,6 +101,7 @@ const api: DevDebugApi = {
   history() {
     return { undo: history.undoDepth, redo: history.redoDepth }
   },
+  nodes: nodeSummaries,
 }
 
 declare global {
