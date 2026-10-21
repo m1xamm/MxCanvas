@@ -105,4 +105,5 @@
 ## Stage 7.1 — Feel fixes, e2e, stress performance
 
 - Task 1: the rectangle tool shows no draft on pointer down and no 100x100 click rect while dragging; the draft starts at the press point after a 3 screen px threshold, clicks still create 100x100, snapping applies only to moving edges and is off on the first active frame, and a dev-only frame hook records draft, selection bounds and selected boxes for same-frame checks.
+- Task 2: move and resize previews apply from the first pixel and commit only past the drag threshold, snapping stays off until the threshold, snap guides clear at gesture start and end, the hover outline hides while a handle is hovered, Design number fields blur on Enter and Escape (the blur no longer commits a value cancelled with Escape), and `npm run e2e` runs 16 Playwright flows that check per-frame box/pointer tracking, overlay-vs-node consistency, cursors and history depth.
 
