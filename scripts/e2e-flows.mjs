@@ -507,13 +507,17 @@ const panFlow = {
     await page.waitForTimeout(60)
     assert((await helpers.cursor()) === 'grab', 'space shows the grab cursor')
     const start = { x: 700, y: 450 }
+    await page.mouse.move(start.x, start.y)
+    await page.waitForTimeout(80)
+    const beforePan = (await helpers.lastFrame()).viewport
     const drag = await helpers.pressDrag(start, { x: 800, y: 500 }, { steps: 10 })
     assert((await helpers.cursor()) === 'grabbing', 'space drag shows the grabbing cursor')
+    await page.waitForTimeout(120)
     const frames = await helpers.frames()
-    const first = frames[0].viewport
+    assert(frames.length > 0, 'space pan records frames')
     const last = frames[frames.length - 1].viewport
-    approx(last.x - first.x, 100, 0.01, 'space pan x')
-    approx(last.y - first.y, 50, 0.01, 'space pan y')
+    approx(last.x - beforePan.x, 100, 0.01, 'space pan x')
+    approx(last.y - beforePan.y, 50, 0.01, 'space pan y')
     await drag.release()
     assert((await helpers.cursor()) === 'grab', 'grab cursor returns after the pan')
     await page.keyboard.up('Space')
@@ -524,7 +528,7 @@ const panFlow = {
     await page.mouse.down({ button: 'middle' })
     await page.mouse.move(650, 470, { steps: 6 })
     await page.mouse.up({ button: 'middle' })
-    await page.waitForTimeout(80)
+    await page.waitForTimeout(120)
     const after = (await helpers.lastFrame()).viewport
     approx(after.x - before.x, -50, 0.01, 'middle mouse pan x')
     approx(after.y - before.y, 20, 0.01, 'middle mouse pan y')
