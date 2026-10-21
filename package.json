@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "shots": "node scripts/shots.mjs",
-    "e2e": "node scripts/e2e.mjs"
+    "e2e": "node scripts/e2e.mjs",
+    "stress": "node scripts/stress.mjs"
   },
   "dependencies": {
     "preact": "^11.0.1"
