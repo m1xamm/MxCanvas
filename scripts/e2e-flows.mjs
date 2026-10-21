@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises'
 import {
   approx,
   assert,
@@ -535,6 +536,108 @@ const panFlow = {
   },
 }
 
+const fileSaveOpenFlow = {
+  query: 'fallback=1',
+  name: 'fallback save, open and drop restore the project file',
+  async run(page, helpers) {
+    await helpers.drawRect({ x: 460, y: 320, width: 220, height: 150 })
+    await page.locator('.file-name').dblclick()
+    const nameInput = page.locator('.file-name__input')
+    await nameInput.fill('Stage file')
+    await nameInput.press('Enter')
+    const downloadPromise = page.waitForEvent('download')
+    await page.keyboard.press('Control+KeyS')
+    const download = await downloadPromise
+    assert(
+      download.suggestedFilename() === 'Stage file.mxc',
+      `saved file is named ${download.suggestedFilename()}`,
+    )
+    const path = await download.path()
+    assert(path !== null, 'saved download has a path')
+    const content = await readFile(path, 'utf8')
+    await page.keyboard.press('Control+KeyN')
+    await page.waitForTimeout(120)
+    assert((await helpers.nodes()).length === 0, 'new file cleared the document')
+    assert(
+      (await page.locator('.dialog-card').count()) === 0,
+      'clean project skips the unsaved dialog',
+    )
+    const chooserPromise = page.waitForEvent('filechooser')
+    await page.keyboard.press('Control+KeyO')
+    const chooser = await chooserPromise
+    await chooser.setFiles(path)
+    await page.waitForTimeout(200)
+    assert((await helpers.nodes()).length === 1, 'opened file restored the node')
+    assert(
+      (await page.locator('.file-name').textContent()) === 'Stage file',
+      'opened file restored the document name',
+    )
+    await page.keyboard.press('Control+KeyN')
+    await page.waitForTimeout(120)
+    assert(
+      (await page.locator('.dialog-card').count()) === 0,
+      'opened project is clean',
+    )
+    await page.evaluate(
+      ({ name, text }) => {
+        const transfer = new DataTransfer()
+        transfer.items.add(new File([text], name, { type: 'application/json' }))
+        window.dispatchEvent(
+          new DragEvent('dragover', { dataTransfer: transfer, bubbles: true, cancelable: true }),
+        )
+        window.dispatchEvent(
+          new DragEvent('drop', { dataTransfer: transfer, bubbles: true, cancelable: true }),
+        )
+      },
+      { name: download.suggestedFilename(), text: content },
+    )
+    await page.waitForTimeout(200)
+    assert((await helpers.nodes()).length === 1, 'dropped file restored the node')
+    assert(
+      (await page.locator('.file-name').textContent()) === 'Stage file',
+      'dropped file restored the document name',
+    )
+  },
+}
+
+const unsavedDialogFlow = {
+  query: 'fallback=1',
+  name: 'unsaved changes dialog saves, discards or cancels',
+  async run(page, helpers) {
+    await helpers.drawRect({ x: 500, y: 340, width: 180, height: 120 })
+    await page.keyboard.press('Control+KeyN')
+    await page.getByRole('alertdialog').waitFor()
+    assert(
+      (await page.getByText('Сохранить изменения?', { exact: true }).count()) === 1,
+      'unsaved dialog is shown for a dirty project',
+    )
+    const downloadPromise = page.waitForEvent('download')
+    await page.getByRole('button', { name: 'Сохранить', exact: true }).click()
+    const download = await downloadPromise
+    assert(
+      download.suggestedFilename() === 'Без названия.mxc',
+      `untitled fallback save is named ${download.suggestedFilename()}`,
+    )
+    await page.waitForTimeout(150)
+    assert((await helpers.nodes()).length === 0, 'save then continue created a new file')
+    await helpers.drawRect({ x: 520, y: 360, width: 180, height: 120 })
+    await page.keyboard.press('Control+KeyN')
+    await page.getByRole('alertdialog').waitFor()
+    await page.getByRole('button', { name: 'Отмена', exact: true }).click()
+    await page.waitForTimeout(100)
+    assert((await helpers.nodes()).length === 1, 'cancel kept the document')
+    await page.keyboard.press('Control+KeyN')
+    await page.getByRole('alertdialog').waitFor()
+    await page.getByRole('button', { name: 'Не сохранять', exact: true }).click()
+    await page.waitForTimeout(100)
+    assert((await helpers.nodes()).length === 0, 'discard created a new file')
+    assert(
+      (await page.locator('.file-name').textContent()) === 'Без названия',
+      'new file name was reset',
+    )
+  },
+}
+
 const autosaveFlow = {
   autosave: true,
   name: 'autosave restores the document and name after reload',
@@ -584,5 +687,7 @@ export const flows = [
   paintFlow,
   zoomFlow,
   panFlow,
+  fileSaveOpenFlow,
+  unsavedDialogFlow,
   autosaveFlow,
 ]

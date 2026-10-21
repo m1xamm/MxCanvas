@@ -31,7 +31,7 @@ export async function restoreAutosavedProject(): Promise<boolean> {
   try {
     const payload = await readAutosave()
     if (!payload) return false
-    applyProjectSnapshot(parseProject(payload.text))
+    applyProjectSnapshot(parseProject(payload.text), true)
     return true
   } catch {
     return false

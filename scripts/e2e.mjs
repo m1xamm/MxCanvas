@@ -56,7 +56,10 @@ async function main() {
   let passed = 0
   try {
     for (const flow of flows) {
-      const flowUrl = flow.autosave ? url : `${url}?autosave=off`
+      const params = new URLSearchParams(flow.query ?? '')
+      if (!flow.autosave) params.set('autosave', 'off')
+      const query = params.toString()
+      const flowUrl = query === '' ? url : `${url}?${query}`
       const result = await Promise.race([
         runFlow(context, flowUrl, flow)
           .then(() => null)

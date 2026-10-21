@@ -411,6 +411,49 @@
   color: var(--color-on-surface-variant);
 }
 
+.dialog-card--message {
+  width: 360px;
+}
+
+.dialog-row--stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-1);
+}
+
+.dialog-row--actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.dialog-message {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+  color: var(--color-on-surface-variant);
+}
+
+.dialog-button {
+  height: 28px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-raised);
+  color: var(--color-on-surface);
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+  font-weight: var(--font-weight-medium);
+  transition: background var(--motion-fast) var(--motion-easing);
+}
+
+.dialog-button--primary {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+
+.dialog-button--danger {
+  color: var(--color-error);
+}
+
 .icon-button {
   display: grid;
   place-items: center;

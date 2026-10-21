@@ -11,9 +11,17 @@ import { history, scene } from './editor'
 import { applyProjectViewport, currentProjectViewport } from './viewport-state'
 
 export const documentNameStore = new Store<string | null>(null)
+export const projectDirtyStore = new Store(false)
+
+scene.subscribe(() => setProjectDirty(true))
+documentNameStore.subscribe(() => setProjectDirty(true))
 
 subscribeLanguage(updateDocumentTitle)
 updateDocumentTitle()
+
+export function setProjectDirty(dirty: boolean): void {
+  projectDirtyStore.set(dirty)
+}
 
 export function setDocumentName(name: string | null): void {
   const normalized = normalizeName(name)
@@ -27,13 +35,14 @@ export function updateDocumentTitle(): void {
   document.title = name ? `${name} — ${t('windowTitle')}` : t('windowTitle')
 }
 
-export function applyProjectSnapshot(snapshot: ProjectSnapshot): void {
+export function applyProjectSnapshot(snapshot: ProjectSnapshot, dirty = false): void {
   history.clear()
   setSelection([])
   setHoveredLayer(null)
   scene.replaceAll(snapshot.nodes)
   setDocumentName(snapshot.name)
   applyProjectViewport(snapshot.viewport)
+  setProjectDirty(dirty)
 }
 
 export function resetProject(): void {

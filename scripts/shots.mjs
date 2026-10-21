@@ -219,6 +219,11 @@ async function runMenuShots(page) {
   await capture(page, 'main-menu-open')
   await page.keyboard.press('Escape')
 
+  await page.keyboard.press('Control+KeyN')
+  await page.getByRole('alertdialog').waitFor()
+  await capture(page, 'unsaved-dialog')
+  await page.keyboard.press('Escape')
+
   await openPopup(page, page.locator('.menu-button'))
   await page.locator('.menu-item', { hasText: 'Настройки' }).click()
   await capture(page, 'settings-dialog')

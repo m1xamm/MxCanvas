@@ -44,6 +44,10 @@ export type IconName =
   | 'strokeInside'
   | 'strokeCenter'
   | 'strokeOutside'
+  | 'newFile'
+  | 'openFile'
+  | 'saveFile'
+  | 'saveFileAs'
 
 interface IconFiles {
   outlined: string
@@ -93,6 +97,10 @@ const ICON_FILES: Record<IconName, IconFiles> = {
   strokeInside: { outlined: 'border_inner', filled: 'border_inner-fill' },
   strokeCenter: { outlined: 'border_style', filled: 'border_style-fill' },
   strokeOutside: { outlined: 'border_outer', filled: 'border_outer-fill' },
+  newFile: { outlined: 'note_add', filled: 'note_add' },
+  openFile: { outlined: 'folder_open', filled: 'folder_open' },
+  saveFile: { outlined: 'save', filled: 'save' },
+  saveFileAs: { outlined: 'save_as', filled: 'save_as' },
 }
 
 export const TOOL_ICON_NAMES: Record<ToolId, IconName> = {

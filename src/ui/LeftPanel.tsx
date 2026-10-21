@@ -16,11 +16,22 @@ const TAB_LABEL_KEYS: Record<PanelTab, 'file' | 'assets'> = {
 }
 
 export interface LeftPanelProps {
+  onNew: () => void
+  onOpen: () => void
+  onSave: () => void
+  onSaveAs: () => void
   onOpenSettings: () => void
   menuButtonRef?: RefObject<HTMLButtonElement | null>
 }
 
-export function LeftPanel({ onOpenSettings, menuButtonRef }: LeftPanelProps) {
+export function LeftPanel({
+  onNew,
+  onOpen,
+  onSave,
+  onSaveAs,
+  onOpenSettings,
+  menuButtonRef,
+}: LeftPanelProps) {
   const t = useTranslation()
   const [activeTab, setActiveTab] = useState<PanelTab>('file')
 
@@ -28,7 +39,14 @@ export function LeftPanel({ onOpenSettings, menuButtonRef }: LeftPanelProps) {
     <Cluster direction="vertical" class="side-panel side-panel--left">
       <div class="block block--tight">
         <div class="file-head">
-          <MainMenu onOpenSettings={onOpenSettings} buttonRef={menuButtonRef} />
+          <MainMenu
+            onNew={onNew}
+            onOpen={onOpen}
+            onSave={onSave}
+            onSaveAs={onSaveAs}
+            onOpenSettings={onOpenSettings}
+            buttonRef={menuButtonRef}
+          />
           <DocumentName />
         </div>
       </div>
