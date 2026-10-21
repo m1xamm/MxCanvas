@@ -11,6 +11,8 @@ import type { Viewport } from '../core/viewport'
 import type { ResizeHandleId } from '../interaction/resize'
 import { collectVisibleNodes } from './culling'
 import { DropShadowPass } from './drop-shadow-pass'
+import { hasFrameObserver, publishFrame } from './frame-observer'
+import { frameInfoOf, type FrameState } from './frame-state'
 import { traceNodeRect } from './node-path'
 import type { Renderer } from './renderer'
 import {
@@ -35,6 +37,7 @@ export interface Canvas2DRendererOptions {
   getSelectionBounds?: () => Rect | null
   getDraft?: () => Rect | null
   getSnapGuides?: () => readonly SnapGuide[]
+  getPointer?: () => Vec2 | null
   isGridVisible?: () => boolean
   isPixelGridVisible?: () => boolean
 }
@@ -52,6 +55,7 @@ export class Canvas2DRenderer implements Renderer {
   #getSelectionBounds: () => Rect | null
   #getDraft: () => Rect | null
   #getSnapGuides: () => readonly SnapGuide[]
+  #getPointer: () => Vec2 | null
   #isGridVisible: () => boolean
   #isPixelGridVisible: () => boolean
   #colors: ThemeColors
@@ -59,7 +63,18 @@ export class Canvas2DRenderer implements Renderer {
   #cssWidth = 1
   #cssHeight = 1
   #visibleNodes: SceneNodeUnion[] = []
-  #previews: ReadonlyMap<NodeId, NodeBox> = new Map()
+  #frame: FrameState = {
+    time: 0,
+    selection: [],
+    hoveredId: null,
+    hoveredHandle: null,
+    marquee: null,
+    previews: new Map(),
+    selectionBounds: null,
+    draft: null,
+    snapGuides: NO_SNAP_GUIDES,
+    pointer: null,
+  }
   #hoveredHandle: ResizeHandleId | null = null
   #hoverStartedAt = 0
   #shadowPass: DropShadowPass
@@ -82,6 +97,7 @@ export class Canvas2DRenderer implements Renderer {
     this.#getSelectionBounds = options.getSelectionBounds ?? (() => null)
     this.#getDraft = options.getDraft ?? (() => null)
     this.#getSnapGuides = options.getSnapGuides ?? (() => NO_SNAP_GUIDES)
+    this.#getPointer = options.getPointer ?? (() => null)
     this.#isGridVisible = options.isGridVisible ?? (() => false)
     this.#isPixelGridVisible = options.isPixelGridVisible ?? (() => false)
     this.#colors = readThemeColors()
@@ -111,7 +127,7 @@ export class Canvas2DRenderer implements Renderer {
   #draw = (time: number): void => {
     const context = this.#context
     this.#dirty = false
-    this.#previews = this.#getPreviews()
+    const frame = this.#snapshotFrame(time)
     context.setTransform(1, 0, 0, 1, 0, 0)
     context.globalAlpha = 1
     context.fillStyle = this.#colors.canvas
@@ -131,16 +147,32 @@ export class Canvas2DRenderer implements Renderer {
     this.#drawMarquee()
     this.#drawDraft(deviceViewport)
     this.#drawSnapGuides()
-    const hoveredHandle = this.#getHoveredHandle()
+    const hoveredHandle = frame.hoveredHandle
     drawSelectionOverlay({
       context: this.#context,
       viewportMatrix: this.#viewport.matrix(),
-      bounds: this.#getSelectionBounds(),
+      bounds: frame.selectionBounds,
       colors: this.#colors,
       devicePixelRatio: this.#devicePixelRatio,
       hoveredHandle,
       hoverScale: this.#hoverScale(hoveredHandle, time),
     })
+    if (hasFrameObserver()) publishFrame(frameInfoOf(this.#scene, frame))
+  }
+
+  #snapshotFrame(time: number): FrameState {
+    const frame = this.#frame
+    frame.time = time
+    frame.selection = this.#getSelection()
+    frame.hoveredId = this.#getHoveredId()
+    frame.hoveredHandle = this.#getHoveredHandle()
+    frame.marquee = this.#getMarquee()
+    frame.previews = this.#getPreviews()
+    frame.selectionBounds = this.#getSelectionBounds()
+    frame.draft = this.#getDraft()
+    frame.snapGuides = this.#getSnapGuides()
+    frame.pointer = this.#getPointer()
+    return frame
   }
 
   #hoverScale(handle: ResizeHandleId | null, time: number): number {
@@ -197,7 +229,7 @@ export class Canvas2DRenderer implements Renderer {
 
   #drawNode(node: SceneNodeUnion, deviceViewport: Mat2D): void {
     const context = this.#context
-    const preview = this.#previews.get(node.id)
+    const preview = this.#frame.previews.get(node.id)
     const box: NodeBox = preview ?? node
     const transform = multiply(deviceViewport, this.#nodeWorldTransform(node, preview))
     if (node.effects.length > 0) this.#shadowPass.draw(node, box, transform)
@@ -221,8 +253,8 @@ export class Canvas2DRenderer implements Renderer {
   }
 
   #drawHoverOutline(deviceViewport: Mat2D): void {
-    const id = this.#getHoveredId()
-    if (!id || this.#getSelection().includes(id)) return
+    const id = this.#frame.hoveredId
+    if (!id || this.#frame.selection.includes(id)) return
     const node = this.#scene.getNode(id)
     if (!node || !node.visible) return
     const context = this.#context
@@ -237,10 +269,10 @@ export class Canvas2DRenderer implements Renderer {
     const context = this.#context
     context.strokeStyle = this.#colors.primary
     context.lineWidth = OUTLINE_SCREEN_PX / this.#viewport.zoom
-    for (const id of this.#getSelection()) {
+    for (const id of this.#frame.selection) {
       const node = this.#scene.getNode(id)
       if (!node || !node.visible) continue
-      const preview = this.#previews.get(id)
+      const preview = this.#frame.previews.get(id)
       const box: NodeBox = preview ?? node
       this.#applyTransform(multiply(deviceViewport, this.#nodeWorldTransform(node, preview)))
       this.#traceNodePath(node, box.width, box.height)
@@ -249,7 +281,7 @@ export class Canvas2DRenderer implements Renderer {
   }
 
   #drawMarquee(): void {
-    const marquee = this.#getMarquee()
+    const marquee = this.#frame.marquee
     if (!marquee) return
     const context = this.#context
     const bounds = transformRect(this.#viewport.matrix(), marquee)
@@ -267,7 +299,7 @@ export class Canvas2DRenderer implements Renderer {
   }
 
   #drawDraft(deviceViewport: Mat2D): void {
-    const draft = this.#getDraft()
+    const draft = this.#frame.draft
     if (!draft) return
     const context = this.#context
     this.#applyTransform(deviceViewport)
@@ -283,7 +315,7 @@ export class Canvas2DRenderer implements Renderer {
   }
 
   #drawSnapGuides(): void {
-    const guides = this.#getSnapGuides()
+    const guides = this.#frame.snapGuides
     if (guides.length === 0) return
     const context = this.#context
     const viewport = this.#viewport.matrix()

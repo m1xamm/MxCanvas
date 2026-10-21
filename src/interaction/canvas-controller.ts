@@ -3,12 +3,18 @@ import type { NodeBoxChange } from '../core/commands/node-box-change'
 import { type LayerOrderMode } from '../core/layers'
 import type { Vec2 } from '../core/math/matrix'
 import type { Rect } from '../core/math/rect'
-import { ALL_SNAP_EDGES, type SnapGuide } from '../core/snap'
+import { type SnapGuide } from '../core/snap'
 import { sceneBounds, type NodeBox } from '../core/transform'
 import type { Viewport } from '../core/viewport'
 import { fitBounds } from '../core/viewport-fit'
+import { isDrag } from './gesture'
 import { collectSelectableIds } from './hit-testing'
-import { rectangleDraft, type RectangleDragModifiers, type RectangleDraftSnap } from './rectangle-draft'
+import {
+  clickRectangle,
+  rectangleDraft,
+  type RectangleDragModifiers,
+  type RectangleDraftSnap,
+} from './rectangle-draft'
 import type { ResizeHandleId } from './resize'
 import { SelectionTool, type SelectionPointerInput, type SelectionSnap } from './selection-tool'
 import { TOOL_HOTKEYS, type ToolId } from './tools'
@@ -90,6 +96,8 @@ export class CanvasController {
   #draftSnap: RectangleDraftSnap | null
   #draftPointerId: number | null = null
   #draftStart: Vec2 = { x: 0, y: 0 }
+  #draftStartScreen: Vec2 = { x: 0, y: 0 }
+  #draftActive = false
 
   constructor(canvas: HTMLCanvasElement, viewport: Viewport, options: CanvasControllerOptions) {
     this.#canvas = canvas
@@ -97,7 +105,7 @@ export class CanvasController {
     this.#options = options
     this.#tool = options.initialTool
     const snap = options.snap
-    this.#draftSnap = snap ? (rect, disabled) => snap(rect, 'resize', ALL_SNAP_EDGES, disabled) : null
+    this.#draftSnap = snap ? (rect, edges, disabled) => snap(rect, 'resize', edges, disabled) : null
     this.#selectionTool = new SelectionTool({
       scene: options.scene,
       viewport,
@@ -123,6 +131,10 @@ export class CanvasController {
 
   get draft(): Rect | null {
     return this.#draft
+  }
+
+  get pointer(): Vec2 {
+    return this.#pointer
   }
 
   get snapGuides(): readonly SnapGuide[] {
@@ -233,10 +245,13 @@ export class CanvasController {
     if (this.#tool === 'rectangle') {
       event.preventDefault()
       this.#draftPointerId = event.pointerId
+      this.#draftStartScreen = this.#pointer
       this.#draftStart = this.#viewport.screenToWorld(this.#pointer)
-      this.#updateDraft(this.#draftStart, dragModifiers(event), event.ctrlKey)
+      this.#draftActive = false
+      this.#draft = null
+      this.#draftGuides = NO_GUIDES
       this.#canvas.setPointerCapture(event.pointerId)
-      this.#options.onDraftChange()
+      this.#updateCursor()
       return
     }
     if (this.#tool === 'move') {
@@ -258,6 +273,17 @@ export class CanvasController {
       return
     }
     if (this.#draftPointerId !== null && event.pointerId === this.#draftPointerId) {
+      if (!this.#draftActive) {
+        if (!isDrag(this.#draftStartScreen, this.#pointer)) return
+        this.#draftActive = true
+        this.#updateDraft(
+          this.#viewport.screenToWorld(this.#pointer),
+          dragModifiers(event),
+          true,
+        )
+        this.#options.onDraftChange()
+        return
+      }
       const world = this.#viewport.screenToWorld(this.#pointer)
       this.#updateDraft(world, dragModifiers(event), event.ctrlKey)
       this.#options.onDraftChange()
@@ -277,10 +303,23 @@ export class CanvasController {
       return
     }
     if (this.#draftPointerId !== null && event.pointerId === this.#draftPointerId) {
-      const draft = this.#draft
       const cancelled = event.type === 'pointercancel'
+      this.#pointer = this.#toCanvasPoint(event)
+      if (!cancelled && this.#draftActive) {
+        this.#updateDraft(
+          this.#viewport.screenToWorld(this.#pointer),
+          dragModifiers(event),
+          event.ctrlKey,
+        )
+      }
+      const draft = this.#draftActive
+        ? this.#draft
+        : cancelled
+          ? null
+          : clickRectangle(this.#draftStart)
       this.#draftPointerId = null
       this.#draft = null
+      this.#draftActive = false
       this.#draftGuides = NO_GUIDES
       this.#releasePointerCapture(event.pointerId)
       if (draft && !cancelled) this.#options.onCreateRectangle(draft)
@@ -463,6 +502,7 @@ export class CanvasController {
     if (this.#draftPointerId === null) return
     const pointerId = this.#draftPointerId
     this.#draftPointerId = null
+    this.#draftActive = false
     this.#draft = null
     this.#draftGuides = NO_GUIDES
     this.#releasePointerCapture(pointerId)

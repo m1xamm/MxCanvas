@@ -7,6 +7,7 @@ import { translation, type Vec2 } from '../core/math/matrix'
 import type { Rect } from '../core/math/rect'
 import { Viewport } from '../core/viewport'
 import { CanvasController } from './canvas-controller'
+import type { SelectionSnap } from './selection-tool'
 import type { ToolId } from './tools'
 
 type EventHandler = (event: unknown) => void
@@ -140,7 +141,7 @@ function createRectangle(id: string, x: number, y: number, size = 100): Rectangl
 function setup(
   initialTool: ToolId = 'move',
   scene: Document = new Document(),
-  options: { getViewportArea?: () => Rect } = {},
+  options: { getViewportArea?: () => Rect; snap?: SelectionSnap } = {},
 ) {
   const fakeWindow = createEventTarget()
   vi.stubGlobal('window', fakeWindow)
@@ -187,6 +188,7 @@ function setup(
     onTogglePixelSnap,
     onReorderSelection,
     getViewportArea: options.getViewportArea,
+    snap: options.snap,
   })
   return {
     fakeWindow,
@@ -406,13 +408,71 @@ describe('CanvasController', () => {
     const { canvas, onCreateRectangle, controller } = setup('rectangle')
     expect(canvas.style.cursor).toBe('crosshair')
     canvas.dispatch('pointerdown', createPointerEvent({ button: 0, pointerId: 5, clientX: 120, clientY: 80 }))
-    expect(controller.draft).toEqual({ x: 20, y: 30, width: 100, height: 100 })
+    expect(controller.draft).toBeNull()
     canvas.dispatch('pointermove', createPointerEvent({ button: 0, pointerId: 5, clientX: 220, clientY: 180 }))
     expect(controller.draft).toEqual({ x: 20, y: 30, width: 100, height: 100 })
     expect(onCreateRectangle).not.toHaveBeenCalled()
     canvas.dispatch('pointerup', createPointerEvent({ button: 0, pointerId: 5, clientX: 220, clientY: 180 }))
     expect(controller.draft).toBeNull()
     expect(onCreateRectangle).toHaveBeenCalledWith({ x: 20, y: 30, width: 100, height: 100 })
+    controller.dispose()
+  })
+
+  it('shows nothing on pointer down and no click rectangle during a drag', () => {
+    const { canvas, onDraftChange, onCreateRectangle, controller } = setup('rectangle')
+    canvas.dispatch('pointerdown', createPointerEvent({ button: 0, pointerId: 20, clientX: 300, clientY: 250 }))
+    expect(controller.draft).toBeNull()
+    expect(onDraftChange).not.toHaveBeenCalled()
+    canvas.dispatch('pointermove', createPointerEvent({ button: 0, pointerId: 20, clientX: 302, clientY: 250 }))
+    expect(controller.draft).toBeNull()
+    canvas.dispatch('pointermove', createPointerEvent({ button: 0, pointerId: 20, clientX: 303, clientY: 250 }))
+    expect(controller.draft).toEqual({ x: 200, y: 200, width: 3, height: 0 })
+    canvas.dispatch('pointerup', createPointerEvent({ button: 0, pointerId: 20, clientX: 304, clientY: 250 }))
+    expect(onCreateRectangle).toHaveBeenCalledWith({ x: 200, y: 200, width: 4, height: 0 })
+    controller.dispose()
+  })
+
+  it('measures the drag threshold in screen pixels', () => {
+    const { canvas, viewport, controller } = setup('rectangle')
+    viewport.setView({ x: 0, y: 0 }, 2)
+    canvas.dispatch('pointerdown', createPointerEvent({ button: 0, pointerId: 21, clientX: 300, clientY: 250 }))
+    canvas.dispatch('pointermove', createPointerEvent({ button: 0, pointerId: 21, clientX: 302, clientY: 250 }))
+    expect(controller.draft).toBeNull()
+    canvas.dispatch('pointermove', createPointerEvent({ button: 0, pointerId: 21, clientX: 303, clientY: 250 }))
+    expect(controller.draft).toEqual({ x: 100, y: 100, width: 1.5, height: 0 })
+    controller.dispose()
+  })
+
+  it('does not snap on the first active draft frame', () => {
+    const snap = vi.fn<SelectionSnap>((rect, _mode, _edges, disabled) =>
+      disabled
+        ? { rect, guides: [] }
+        : {
+            rect: { ...rect, x: rect.x - 20, width: rect.width + 20 },
+            guides: [],
+          },
+    )
+    const { canvas, controller } = setup('rectangle', new Document(), { snap })
+    canvas.dispatch('pointerdown', createPointerEvent({ button: 0, pointerId: 22, clientX: 300, clientY: 250 }))
+    canvas.dispatch('pointermove', createPointerEvent({ button: 0, pointerId: 22, clientX: 303, clientY: 253 }))
+    expect(controller.draft).toEqual({ x: 200, y: 200, width: 3, height: 3 })
+    expect(snap).toHaveBeenCalledWith(
+      { x: 200, y: 200, width: 3, height: 3 },
+      'resize',
+      { left: false, right: true, top: false, bottom: true },
+      true,
+    )
+    canvas.dispatch('pointermove', createPointerEvent({ button: 0, pointerId: 22, clientX: 304, clientY: 254 }))
+    expect(snap).toHaveBeenCalled()
+    expect(controller.draft).toEqual({ x: 180, y: 200, width: 24, height: 4 })
+    controller.dispose()
+  })
+
+  it('starts the draft exactly at the press point when the threshold is crossed', () => {
+    const { canvas, controller } = setup('rectangle')
+    canvas.dispatch('pointerdown', createPointerEvent({ button: 0, pointerId: 23, clientX: 300, clientY: 250 }))
+    canvas.dispatch('pointermove', createPointerEvent({ button: 0, pointerId: 23, clientX: 303, clientY: 252 }))
+    expect(controller.draft).toEqual({ x: 200, y: 200, width: 3, height: 2 })
     controller.dispose()
   })
 

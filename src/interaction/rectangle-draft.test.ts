@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { SnapGuide } from '../core/snap'
-import { rectangleDraft, rectangleFromDrag, type RectangleDraftSnap } from './rectangle-draft'
+import { ALL_SNAP_EDGES, type SnapEdgeMask, type SnapGuide } from '../core/snap'
+import {
+  clickRectangle,
+  rectangleDraft,
+  rectangleFromDrag,
+  type RectangleDraftSnap,
+} from './rectangle-draft'
 
 const NO_MODIFIERS = { square: false, fromCenter: false }
 const SQUARE_ONLY = { square: true, fromCenter: false }
@@ -53,28 +58,19 @@ describe('rectangleFromDrag', () => {
     ).toEqual({ x: 70, y: 70, width: 60, height: 60 })
   })
 
-  it('creates a 100x100 rect at the click point when movement is under 3px', () => {
-    expect(rectangleFromDrag({ x: 50, y: 50 }, { x: 51, y: 52.9 }, NO_MODIFIERS)).toEqual({
+  it('keeps the press point as the anchor with zero size', () => {
+    expect(rectangleFromDrag({ x: 50, y: 50 }, { x: 51, y: 52 }, NO_MODIFIERS)).toEqual({
       x: 50,
       y: 50,
-      width: 100,
-      height: 100,
-    })
-    expect(rectangleFromDrag({ x: 50, y: 50 }, { x: 50, y: 50 }, SQUARE_FROM_CENTER)).toEqual({
-      x: 50,
-      y: 50,
-      width: 100,
-      height: 100,
+      width: 1,
+      height: 2,
     })
   })
+})
 
-  it('treats a 3px drag as a drag', () => {
-    expect(rectangleFromDrag({ x: 0, y: 0 }, { x: 3, y: 0 }, NO_MODIFIERS)).toEqual({
-      x: 0,
-      y: 0,
-      width: 3,
-      height: 0,
-    })
+describe('clickRectangle', () => {
+  it('creates a 100x100 rect at the click point', () => {
+    expect(clickRectangle({ x: 50, y: 50 })).toEqual({ x: 50, y: 50, width: 100, height: 100 })
   })
 })
 
@@ -107,19 +103,67 @@ describe('rectangleDraft', () => {
     expect(draft.guides).toEqual(NO_GUIDES)
   })
 
-  it('lands both edges of the drag on whole pixels', () => {
+  it('snaps only the moving edges and keeps the anchor fixed', () => {
+    const roundMovingEdges: RectangleDraftSnap = (rect, edges) => {
+      const left = edges.left ? Math.round(rect.x) : rect.x
+      const top = edges.top ? Math.round(rect.y) : rect.y
+      const right = edges.right ? Math.round(rect.x + rect.width) : rect.x + rect.width
+      const bottom = edges.bottom ? Math.round(rect.y + rect.height) : rect.y + rect.height
+      return {
+        rect: { x: left, y: top, width: right - left, height: bottom - top },
+        guides: NO_GUIDES,
+      }
+    }
     const draft = rectangleDraft({
       start: { x: 10.4, y: 10.6 },
       end: { x: 110.6, y: 60.4 },
       modifiers: NO_MODIFIERS,
-      snap: roundEdges,
+      snap: roundMovingEdges,
       snapDisabled: false,
     })
-    expect(draft.rect).toEqual({ x: 10, y: 11, width: 101, height: 49 })
+    expect(draft.rect.x).toBe(10.4)
+    expect(draft.rect.y).toBe(10.6)
+    expect(draft.rect.x + draft.rect.width).toBe(111)
+    expect(draft.rect.y + draft.rect.height).toBe(60)
+  })
+
+  it('snaps the edges that move when the drag goes left and up', () => {
+    const snap = vi.fn<RectangleDraftSnap>((rect) => ({ rect, guides: NO_GUIDES }))
+    rectangleDraft({
+      start: { x: 100, y: 100 },
+      end: { x: 40, y: 30 },
+      modifiers: NO_MODIFIERS,
+      snap,
+      snapDisabled: false,
+    })
+    expect(snap).toHaveBeenCalledWith(
+      { x: 40, y: 30, width: 60, height: 70 },
+      { left: true, right: false, top: true, bottom: false },
+      false,
+    )
+  })
+
+  it('snaps every edge when the drag grows from the center', () => {
+    const snap = vi.fn<RectangleDraftSnap>((rect) => ({ rect, guides: NO_GUIDES }))
+    rectangleDraft({
+      start: { x: 100, y: 100 },
+      end: { x: 120, y: 130 },
+      modifiers: CENTER_ONLY,
+      snap,
+      snapDisabled: false,
+    })
+    expect(snap).toHaveBeenCalledWith(
+      { x: 80, y: 70, width: 40, height: 60 },
+      ALL_SNAP_EDGES,
+      false,
+    )
   })
 
   it('keeps a shift drag square after snapping', () => {
-    const widen: RectangleDraftSnap = (rect) => ({ rect: { ...rect, width: 120 }, guides: NO_GUIDES })
+    const widen: RectangleDraftSnap = (rect, edges): { rect: typeof rect; guides: readonly SnapGuide[] } => ({
+      rect: edges.right ? { ...rect, width: 120 } : rect,
+      guides: NO_GUIDES,
+    })
     const draft = rectangleDraft({
       start: { x: 0, y: 0 },
       end: { x: 100, y: 100 },
@@ -150,6 +194,7 @@ describe('rectangleDraft', () => {
       snap,
       snapDisabled: true,
     })
-    expect(snap).toHaveBeenCalledWith({ x: 0, y: 0, width: 50, height: 50 }, true)
+    const edges: SnapEdgeMask = { left: false, right: true, top: false, bottom: true }
+    expect(snap).toHaveBeenCalledWith({ x: 0, y: 0, width: 50, height: 50 }, edges, true)
   })
 })

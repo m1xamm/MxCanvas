@@ -80,6 +80,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
       getSelectionBounds: () => controller?.selectionBounds ?? null,
       getDraft: () => controller?.draft ?? null,
       getSnapGuides: () => controller?.snapGuides ?? NO_GUIDES,
+      getPointer: () => controller?.pointer ?? null,
       isGridVisible: isCanvasGridVisible,
       isPixelGridVisible,
     })

@@ -25,6 +25,14 @@ export class History {
     return this.#redoStack.length > 0
   }
 
+  get undoDepth(): number {
+    return this.#undoStack.length
+  }
+
+  get redoDepth(): number {
+    return this.#redoStack.length
+  }
+
   execute(command: Command): void {
     const now = this.#now()
     const previous = this.#undoStack[this.#undoStack.length - 1]
