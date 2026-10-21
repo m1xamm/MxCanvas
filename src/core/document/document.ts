@@ -44,6 +44,14 @@ export class Document {
     this.#markChanged()
   }
 
+  replaceAll(nodes: readonly SceneNodeUnion[]): void {
+    this.#nodes = new Map(nodes.map((node) => [node.id, node]))
+    this.#rootChildren = nodes
+      .filter((node) => node.parentId === null)
+      .map((node) => node.id)
+    this.#markChanged()
+  }
+
   setNodeBox(id: NodeId, box: NodeBox): void {
     const node = this.#nodes.get(id)
     if (!node) return
@@ -130,7 +138,8 @@ export class Document {
     this.#markChanged()
   }
 
-  moveNodeToIndex(id: NodeId, index: number): void {    const siblings = this.#siblingIds(id)
+  moveNodeToIndex(id: NodeId, index: number): void {
+    const siblings = this.#siblingIds(id)
     const from = siblings.indexOf(id)
     if (from === -1) return
     const to = clampIndex(index, siblings.length - 1)

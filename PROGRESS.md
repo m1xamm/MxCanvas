@@ -113,3 +113,4 @@
 
 - Task 0: added .editorconfig and .gitattributes (UTF-8, LF), normalized every text file to UTF-8 without BOM and LF, and repaired the PROGRESS header.
 - Task 0b: every numeric and paint input now sits in a 24px tonal field (--color-field) with the label as a scrub handle, a hover state layer, a 2px inner focus ring and 38% disabled opacity; related fields form pill/seam clusters, mixed values show an em dash, paint and effect rows use field containers, layer rename is a pill field, and strokes gained inside/center/outside alignment with a segmented control.
+- Task 1: `.mxc` files serialize the whole node tree, document name and viewport with a format marker and version 1; parsing runs a stepwise migration hook, validates every node, paint, effect and viewport value, rejects newer versions and unsupported types with typed codes, and round-trips in tests; `Document.replaceAll` loads a parsed tree.
