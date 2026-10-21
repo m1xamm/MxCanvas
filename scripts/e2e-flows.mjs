@@ -535,6 +535,38 @@ const panFlow = {
   },
 }
 
+const autosaveFlow = {
+  autosave: true,
+  name: 'autosave restores the document and name after reload',
+  async run(page, helpers) {
+    await helpers.drawRect({ x: 480, y: 360, width: 240, height: 160 })
+    await page.locator('.file-name').dblclick()
+    const nameInput = page.locator('.file-name__input')
+    await nameInput.fill('Autosaved file')
+    await nameInput.press('Enter')
+    await page.waitForTimeout(1300)
+    assert((await helpers.nodes()).length === 1, 'one node before reload')
+    await page.waitForFunction(
+      () => document.querySelector('.file-save-state')?.textContent === 'Сохранено',
+      null,
+      { timeout: 5000 },
+    )
+    await page.reload()
+    await page.locator('.app-shell').waitFor()
+    await page.waitForTimeout(300)
+    assert((await helpers.nodes()).length === 1, 'node restored after reload')
+    assert(
+      (await page.locator('.file-name').textContent()) === 'Autosaved file',
+      'document name restored after reload',
+    )
+    assert(
+      (await page.locator('.file-save-state').textContent()) === 'Сохранено',
+      'restored project is marked saved',
+    )
+    assert((await page.title()).startsWith('Autosaved file'), 'tab title carries the name')
+  },
+}
+
 export const flows = [
   rectDragFlow,
   rectClickFlow,
@@ -552,4 +584,5 @@ export const flows = [
   paintFlow,
   zoomFlow,
   panFlow,
+  autosaveFlow,
 ]

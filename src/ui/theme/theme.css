@@ -42,6 +42,7 @@
 
   --state-hover: 0.08;
   --state-pressed: 0.12;
+  --color-error: #ffb4ab;
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
 

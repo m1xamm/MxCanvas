@@ -178,4 +178,15 @@ describe('History merge window', () => {
     expect(document.getNode('a')?.transform.e).toBe(0)
     expect(history.canUndo).toBe(false)
   })
+
+  it('clears both stacks when a project is replaced', () => {
+    const document = sceneWithRectangle()
+    const history = new History()
+    history.execute(new MoveNodesCommand(document, ['a'], { x: 1, y: 0 }))
+    history.undo()
+    expect(history.redoDepth).toBe(1)
+    history.clear()
+    expect(history.undoDepth).toBe(0)
+    expect(history.redoDepth).toBe(0)
+  })
 })

@@ -74,6 +74,13 @@ export class History {
     }
   }
 
+  clear(): void {
+    this.#undoStack.length = 0
+    this.#redoStack.length = 0
+    this.#lastExecuteAt = Number.NEGATIVE_INFINITY
+    this.#notify()
+  }
+
   #notify(): void {
     for (const listener of this.#listeners) listener()
   }

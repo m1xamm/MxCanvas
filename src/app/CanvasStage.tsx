@@ -3,7 +3,6 @@ import { CreateNodeCommand } from '../core/commands/create-node-command'
 import type { NodeId } from '../core/document/types'
 import type { SnapGuide } from '../core/snap'
 import type { NodeBox } from '../core/transform'
-import { Viewport } from '../core/viewport'
 import { CanvasController } from '../interaction/canvas-controller'
 import { hoveredLayerStore, setHoveredLayer } from '../interaction/layer-list'
 import { selectionStore, setSelection } from '../interaction/selection'
@@ -22,6 +21,7 @@ import {
   toggleSelectionLocked,
   toggleSelectionVisible,
 } from './editor'
+import { projectViewport } from './viewport-state'
 import {
   isCanvasGridVisible,
   isObjectSnapEnabled,
@@ -61,7 +61,7 @@ export function CanvasStage({ tool, inputBlocked }: CanvasStageProps) {
     const canvas = canvasRef.current
     if (!container || !canvas) return
 
-    const viewport = new Viewport()
+    const viewport = projectViewport
     let controller: CanvasController | null = null
     const snapContext = new SnapContext({
       scene,

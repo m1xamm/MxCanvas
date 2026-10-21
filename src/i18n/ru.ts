@@ -12,6 +12,12 @@ export const ru: Dictionary = {
   layers: 'Слои',
   assets: 'Ресурсы',
   untitledFile: 'Без названия',
+  windowTitle: 'MxCanvas',
+  renameFile: 'Переименовать файл',
+  saveUnsaved: 'Не сохранено',
+  saveSaving: 'Сохранение…',
+  saveSaved: 'Сохранено',
+  saveError: 'Ошибка сохранения',
   projectErrors: {
     invalidJson: 'Файл повреждён и не может быть открыт',
     invalidFormat: 'Это не файл MxCanvas',

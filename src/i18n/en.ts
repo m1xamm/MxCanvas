@@ -10,6 +10,12 @@ export const en = {
   layers: 'Layers',
   assets: 'Assets',
   untitledFile: 'Untitled',
+  windowTitle: 'MxCanvas',
+  renameFile: 'Rename file',
+  saveUnsaved: 'Not saved',
+  saveSaving: 'Saving…',
+  saveSaved: 'Saved',
+  saveError: 'Save failed',
   projectErrors: {
     invalidJson: 'This file is damaged and cannot be opened',
     invalidFormat: 'This is not an MxCanvas file',

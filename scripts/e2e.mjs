@@ -20,6 +20,7 @@ async function runFlow(context, url, flow) {
     await page.goto(url)
     await page.locator('.app-shell').waitFor({ timeout: 15000 })
     await page.waitForFunction(() => Boolean(window.__mxDebug), null, { timeout: 15000 })
+    await page.waitForFunction(() => window.__mxDebug.last() !== null, null, { timeout: 15000 })
     await page.waitForTimeout(SETTLE_MS)
     await flow.run(page, createHelpers(page))
     if (errors.length > 0) throw new Error(`console errors: ${errors.join(' | ')}`)
@@ -55,8 +56,9 @@ async function main() {
   let passed = 0
   try {
     for (const flow of flows) {
+      const flowUrl = flow.autosave ? url : `${url}?autosave=off`
       const result = await Promise.race([
-        runFlow(context, url, flow)
+        runFlow(context, flowUrl, flow)
           .then(() => null)
           .catch((error) => error),
         new Promise((resolve) => setTimeout(() => resolve(new Error('flow timeout')), FLOW_TIMEOUT_MS)),

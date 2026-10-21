@@ -161,12 +161,50 @@
   flex: 1;
   min-width: 0;
   overflow: hidden;
+  height: 20px;
   padding: 0 var(--space-1);
+  border-radius: var(--radius-pill);
+  text-align: left;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-sm);
   color: var(--color-on-surface-variant);
   white-space: nowrap;
   text-overflow: ellipsis;
+}
+
+.file-meta {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.file-name__input {
+  width: 100%;
+  height: var(--field-height);
+  padding: 0 var(--space-2);
+  border: none;
+  border-radius: var(--radius-pill);
+  outline: var(--focus-ring-width) solid var(--color-primary);
+  outline-offset: calc(var(--focus-ring-width) * -1);
+  background: var(--color-field);
+  color: var(--color-on-surface);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-sm);
+}
+
+.file-save-state {
+  padding: 0 var(--space-1);
+  color: var(--color-on-surface-subtle);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-xs);
+  white-space: nowrap;
+}
+
+.file-save-state.is-error {
+  color: var(--color-error);
 }
 
 .section-title {

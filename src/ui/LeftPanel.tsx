@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks'
 import type { RefObject } from 'preact'
 import { useTranslation } from '../i18n/use-i18n'
 import { Cluster } from './Cluster'
+import { DocumentName } from './DocumentName'
 import { Icon } from './Icon'
 import { LayersPanel } from './LayersPanel'
 import { MainMenu } from './MainMenu'
@@ -28,9 +29,7 @@ export function LeftPanel({ onOpenSettings, menuButtonRef }: LeftPanelProps) {
       <div class="block block--tight">
         <div class="file-head">
           <MainMenu onOpenSettings={onOpenSettings} buttonRef={menuButtonRef} />
-          <span class="file-name" title={t('untitledFile')}>
-            {t('untitledFile')}
-          </span>
+          <DocumentName />
         </div>
       </div>
       <div class="block block--tight">

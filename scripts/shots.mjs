@@ -421,6 +421,15 @@ async function fillField(field, value) {
 async function runShots(page) {
   await capture(page, 'initial')
   await captureCrop(page, 'logo-crop', { x: 6, y: 6, width: 52, height: 52 })
+
+  await page.locator('.file-name').dblclick()
+  const nameInput = page.locator('.file-name__input')
+  await nameInput.fill('MxCanvas demo')
+  await capture(page, 'document-name-edit')
+  await nameInput.press('Enter')
+  await page.waitForTimeout(1300)
+  await capture(page, 'document-name-saved')
+
   await capture(page, 'grid-default')
 
   await zoomWithWheel(page, GRID_ZOOM_WHEEL_DELTA)
