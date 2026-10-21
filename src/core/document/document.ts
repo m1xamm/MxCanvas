@@ -1,7 +1,7 @@
 import { multiply, type Mat2D } from '../math/matrix'
 import { clonePaint } from '../color'
 import { cloneEffects } from '../effects'
-import type { Effect, NodeId, Paint, SceneNodeUnion } from './types'
+import type { Effect, NodeId, Paint, SceneNodeUnion, StrokeAlign } from './types'
 import type { NodeBox } from '../transform'
 
 export const MAX_STROKE_WEIGHT = 1000
@@ -92,6 +92,13 @@ export class Document {
     const node = this.#nodes.get(id)
     if (!node) return
     node.strokeWeight = clampStrokeWeight(weight)
+    this.#markChanged()
+  }
+
+  setNodeStrokeAlign(id: NodeId, align: StrokeAlign): void {
+    const node = this.#nodes.get(id)
+    if (!node || node.strokeAlign === align) return
+    node.strokeAlign = align
     this.#markChanged()
   }
 

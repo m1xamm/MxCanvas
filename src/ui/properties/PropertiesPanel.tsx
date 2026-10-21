@@ -25,6 +25,7 @@ import {
   setSelectionStrokeColor,
   setSelectionStrokeOpacity,
   setSelectionStrokeVisible,
+  setSelectionStrokeAlign,
   setSelectionStrokeWeight,
 } from '../../app/editor'
 import { useState } from 'preact/hooks'
@@ -35,7 +36,7 @@ import { summarizeFills, summarizeStrokes } from '../../core/paints'
 import type { AlignMode, DistributeMode } from '../../core/align'
 import { selectionNodes, selectionRect } from '../../core/selection-box'
 import { MAX_STROKE_WEIGHT } from '../../core/document/document'
-import type { SceneNodeUnion } from '../../core/document/types'
+import type { SceneNodeUnion, StrokeAlign } from '../../core/document/types'
 import type { MessageKey } from '../../i18n/i18n'
 import { useTranslation } from '../../i18n/use-i18n'
 import { Cluster } from '../Cluster'
@@ -73,6 +74,18 @@ const ALIGN_ACTIONS: readonly AlignAction[] = [
 const DISTRIBUTE_ACTIONS: readonly DistributeAction[] = [
   { icon: 'distributeX', label: 'distributeX', mode: 'horizontal' },
   { icon: 'distributeY', label: 'distributeY', mode: 'vertical' },
+]
+
+interface StrokeAlignAction {
+  icon: IconName
+  label: MessageKey
+  align: StrokeAlign
+}
+
+const STROKE_ALIGN_ACTIONS: readonly StrokeAlignAction[] = [
+  { icon: 'strokeInside', label: 'strokeAlignInside', align: 'inside' },
+  { icon: 'strokeCenter', label: 'strokeAlignCenter', align: 'center' },
+  { icon: 'strokeOutside', label: 'strokeAlignOutside', align: 'outside' },
 ]
 
 export function PropertiesPanel() {
@@ -129,7 +142,7 @@ export function PropertiesPanel() {
         <>
           <div class="block block--section">
             <span class="section-title">{t('sections.position')}</span>
-            <Cluster>
+            <Cluster class="cluster--fields">
               <NumberField
                 label={t('positionX')}
                 value={rect.x}
@@ -146,7 +159,7 @@ export function PropertiesPanel() {
           </div>
           <div class="block block--section">
             <span class="section-title">{t('sections.size')}</span>
-            <Cluster>
+            <Cluster class="cluster--fields">
               <NumberField
                 label={t('sizeWidth')}
                 value={rect.width}
@@ -179,7 +192,7 @@ export function PropertiesPanel() {
       )}
       <div class="block block--section">
         <span class="section-title">{t('sections.appearance')}</span>
-        <Cluster>
+        <Cluster class="cluster--fields">
           <NumberField
             icon="opacity"
             value={percentValue(nodes, (node) => node.opacity)}
@@ -273,6 +286,30 @@ export function PropertiesPanel() {
             />
           ))}
         </Cluster>
+        {strokes.length > 0 && (
+          <Cluster class="segmented-control cluster--fields" role="group" ariaLabel={t('strokeAlignLabel')}>
+            {STROKE_ALIGN_ACTIONS.map((action) => {
+              const active = uniformAlign(nodes) === action.align
+              return (
+                <button
+                  key={action.align}
+                  type="button"
+                  class={
+                    active
+                      ? 'control stroke-align-button is-active'
+                      : 'control stroke-align-button'
+                  }
+                  aria-pressed={active}
+                  aria-label={t(action.label)}
+                  title={t(action.label)}
+                  onClick={() => setSelectionStrokeAlign(action.align)}
+                >
+                  <Icon name={action.icon} size={16} filled={active} />
+                </button>
+              )
+            })}
+          </Cluster>
+        )}
       </div>
       <div class="block block--section">
         <div class="section-head">
@@ -301,7 +338,7 @@ export function PropertiesPanel() {
               onVisibleChange={(visible) => setSelectionEffectVisible(summary.row, visible)}
               onRemove={() => removeSelectionEffect(summary.row)}
             >
-              <Cluster>
+              <Cluster class="cluster--fields">
                 <NumberField
                   label={t('positionX')}
                   value={summary.mixedOffsetX ? null : summary.effect.offsetX}
@@ -315,7 +352,7 @@ export function PropertiesPanel() {
                   onChange={(value, live) => setSelectionEffectOffset(summary.row, 'y', value, live)}
                 />
               </Cluster>
-              <Cluster>
+              <Cluster class="cluster--fields">
                 <NumberField
                   icon="blur"
                   value={summary.mixedBlur ? null : summary.effect.blur}
@@ -373,4 +410,11 @@ function uniformValue(
   if (!first) return null
   const value = read(first)
   return nodes.every((node) => Math.abs(read(node) - value) < 1e-6) ? value : null
+}
+
+function uniformAlign(nodes: readonly SceneNodeUnion[]): StrokeAlign | null {
+  const first = nodes[0]
+  if (!first) return null
+  const value = first.strokeAlign
+  return nodes.every((node) => node.strokeAlign === value) ? value : null
 }

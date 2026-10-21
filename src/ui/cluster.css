@@ -43,3 +43,19 @@
 .cluster > :where(.is-active) {
   --cluster-radius: var(--radius-pill);
 }
+
+.cluster--fields > * {
+  --cluster-radius: var(--radius-pill);
+}
+
+.cluster--fields.cluster--horizontal > :where(:first-child:not(:only-child)) {
+  --cluster-radius: var(--radius-pill) var(--radius-seam) var(--radius-seam) var(--radius-pill);
+}
+
+.cluster--fields.cluster--horizontal > :where(:last-child:not(:only-child)) {
+  --cluster-radius: var(--radius-seam) var(--radius-pill) var(--radius-pill) var(--radius-seam);
+}
+
+.cluster--fields.cluster--horizontal > :where(:not(:first-child):not(:last-child)) {
+  --cluster-radius: var(--radius-seam);
+}

@@ -32,6 +32,8 @@ export interface DropShadowEffect {
 
 export type Effect = DropShadowEffect
 
+export type StrokeAlign = 'inside' | 'center' | 'outside'
+
 export interface SceneNode {
   id: NodeId
   type: NodeType
@@ -48,6 +50,7 @@ export interface SceneNode {
   fills: Paint[]
   strokes: Paint[]
   strokeWeight: number
+  strokeAlign: StrokeAlign
   effects: Effect[]
 }
 

@@ -11,6 +11,7 @@ import { SetEffectsCommand } from '../core/commands/set-effects-command'
 import { SetNodeLockedCommand } from '../core/commands/set-node-locked-command'
 import { SetNodeVisibleCommand } from '../core/commands/set-node-visible-command'
 import { SetOpacityCommand } from '../core/commands/set-opacity-command'
+import { SetStrokeAlignCommand } from '../core/commands/set-stroke-align-command'
 import { SetStrokeWeightCommand } from '../core/commands/set-stroke-weight-command'
 import { SetStrokesCommand } from '../core/commands/set-strokes-command'
 import type { NodeBoxChange } from '../core/commands/node-box-change'
@@ -25,6 +26,7 @@ import type {
   RectangleNode,
   RgbColor,
   SceneNodeUnion,
+  StrokeAlign,
 } from '../core/document/types'
 import { stackIndexForRow } from '../core/stack'
 import { planLayerReorder, siblingGroups, type LayerMove, type LayerOrderMode } from '../core/layers'
@@ -170,6 +172,13 @@ export function setSelectionStrokeWeight(weight: number, live = false): void {
   const ids = selectionStore.get()
   if (ids.length === 0) return
   const command = SetStrokeWeightCommand.forNodes(scene, ids, weight, { mergeable: live })
+  if (command) history.execute(command)
+}
+
+export function setSelectionStrokeAlign(align: StrokeAlign): void {
+  const ids = selectionStore.get()
+  if (ids.length === 0) return
+  const command = SetStrokeAlignCommand.forNodes(scene, ids, align)
   if (command) history.execute(command)
 }
 

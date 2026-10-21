@@ -44,6 +44,7 @@ export function createRectangleNode(init: RectangleNodeInit): RectangleNode {
     fills: [{ ...DEFAULT_FILL, color: { ...DEFAULT_FILL.color } }],
     strokes: [],
     strokeWeight: DEFAULT_STROKE_WEIGHT,
+    strokeAlign: 'center',
     effects: [],
     cornerRadius: 0,
   }

@@ -273,6 +273,15 @@ async function clearOutputDir() {
 async function runPropertiesShots(page) {
   await capture(page, 'properties-single')
 
+  const positionField = page.locator('.field').first()
+  await positionField.hover()
+  await page.waitForTimeout(HOVER_SETTLE_MS)
+  await capture(page, 'input-hover')
+  await positionField.locator('.field__input').click()
+  await capture(page, 'input-focus')
+  await page.keyboard.press('Escape')
+  await parkPointer(page)
+
   await page.locator('.paint-swatch').first().click()
   await page.locator('.color-picker').waitFor()
   await capture(page, 'color-picker-open')

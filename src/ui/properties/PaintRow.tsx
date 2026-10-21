@@ -43,16 +43,20 @@ export function PaintRow({
   const hexLabel = summary.mixedColor ? `${t('hexLabel')}, ${t('mixedValue')}` : t('hexLabel')
 
   return (
-    <Cluster class="paint-row">
+    <Cluster class="paint-row cluster--fields">
       <button
         type="button"
         ref={swatchRef}
         class="control paint-swatch"
         aria-label={t(colorLabel)}
         aria-expanded={pickerOpen}
-        style={{ background: withAlphaColor(paint.color, paint.opacity) }}
         onClick={() => setPickerOpen((value) => !value)}
-      />
+      >
+        <span
+          class="paint-swatch__chip"
+          style={{ background: withAlphaColor(paint.color, paint.opacity) }}
+        />
+      </button>
       <label class="field field--hex" title={hexLabel}>
         <input
           class="field__input"

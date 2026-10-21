@@ -22,6 +22,7 @@ export interface NumberFieldProps {
   min?: number
   max?: number
   title?: string
+  disabled?: boolean
   onChange: (value: number, live: boolean) => void
 }
 
@@ -31,7 +32,7 @@ interface ScrubState {
   startValue: number
 }
 
-export function NumberField({ label, icon, value, suffix, min, max, title, onChange }: NumberFieldProps) {
+export function NumberField({ label, icon, value, suffix, min, max, title, disabled, onChange }: NumberFieldProps) {
   const t = useTranslation()
   const [draft, setDraft] = useState<string | null>(null)
   const draftRef = useRef<string | null>(null)
@@ -113,7 +114,7 @@ export function NumberField({ label, icon, value, suffix, min, max, title, onCha
   }
 
   return (
-    <label class="field" title={mixed ? accessibleName : title}>
+    <label class={disabled ? 'field is-disabled' : 'field'} title={mixed ? accessibleName : title}>
       <span
         class="field__label"
         onPointerDown={onLabelPointerDown}
@@ -129,6 +130,7 @@ export function NumberField({ label, icon, value, suffix, min, max, title, onCha
         inputMode="decimal"
         spellcheck={false}
         value={text}
+        disabled={disabled}
         placeholder={mixed ? MIXED_PLACEHOLDER : ''}
         aria-label={accessibleName}
         onFocus={() => setDraftValue(value === null ? '' : formatNumber(value))}

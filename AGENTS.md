@@ -55,6 +55,7 @@ Shape tokens in theme.css: --radius-outer: 22px, --radius-seam: 4px, --gap-clust
 Cluster pattern: related blocks sit in a cluster of separate tonal blocks 4px apart. The cluster's outer corners are 22px, corners where two blocks touch are 4px. One reusable `Cluster` (CSS utility + Preact component, horizontal and vertical) sets radii by position (first/middle/last/only). Use it for: toolbar buttons, left panel blocks, right panel sections (Position, Layout, Appearance, Fill, Stroke, Effects, Export), property rows, segmented controls.
 Panels float 8px from the window edges. No 1px borders, no divider lines: separation is only the 4px gap and tone difference. No shadows anywhere (no box-shadow, no drop-shadow). Elevation is tonal only.
 Active controls: primary container tone and pill shape (radius transition). Motion 150-250ms, emphasized easing.
+Every input lives in its own tonal container (--color-field), never on the bare block surface.
 All colors, spacing, radii, typography and motion come from CSS variables in src/ui/theme. Never hardcode them. Icons: Material Symbols Rounded (Apache 2.0), vendored as SVG files for only the icons actually used into src/ui/icons and rendered through one Icon component (20px default, currentColor, outlined at rest, filled for active or selected states). No other icon source. Brand: logos are src/assets/logo-dark.svg and src/assets/logo-light.svg; logo-dark.svg is the logo for the dark theme and logo-light.svg for the light theme (named by theme, not by the color of the mark).
 
 ## Localization

@@ -41,6 +41,9 @@ export type IconName =
   | 'distributeY'
   | 'blur'
   | 'spread'
+  | 'strokeInside'
+  | 'strokeCenter'
+  | 'strokeOutside'
 
 interface IconFiles {
   outlined: string
@@ -87,6 +90,9 @@ const ICON_FILES: Record<IconName, IconFiles> = {
   distributeY: { outlined: 'vertical_distribute', filled: 'vertical_distribute-fill' },
   blur: { outlined: 'blur_medium', filled: 'blur_medium-fill' },
   spread: { outlined: 'open_in_full', filled: 'open_in_full-fill' },
+  strokeInside: { outlined: 'border_inner', filled: 'border_inner-fill' },
+  strokeCenter: { outlined: 'border_style', filled: 'border_style-fill' },
+  strokeOutside: { outlined: 'border_outer', filled: 'border_outer-fill' },
 }
 
 export const TOOL_ICON_NAMES: Record<ToolId, IconName> = {

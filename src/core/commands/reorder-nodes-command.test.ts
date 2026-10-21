@@ -20,6 +20,7 @@ function createRectangle(id: string, parentId: string | null = null): RectangleN
     constrainProportions: false,
     strokes: [],
     strokeWeight: 0,
+    strokeAlign: 'center',
     effects: [],
     fills: [],
     cornerRadius: 0,

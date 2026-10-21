@@ -469,12 +469,12 @@
 
 .layer-row__input {
   min-width: 0;
-  height: 22px;
-  padding: 0 var(--space-1);
+  height: 24px;
+  padding: 0 var(--space-2);
   border: none;
-  border-radius: var(--radius-seam);
-  outline-offset: 1px;
-  background: var(--color-sidebar);
+  border-radius: var(--radius-pill);
+  outline-offset: -2px;
+  background: var(--color-field);
   color: var(--color-on-surface);
   font: inherit;
 }

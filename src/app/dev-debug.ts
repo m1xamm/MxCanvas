@@ -31,6 +31,7 @@ interface DevNodeSummary {
   fills: number
   strokes: number
   strokeWeight: number
+  strokeAlign: string
   effects: number
 }
 
@@ -75,6 +76,7 @@ function nodeSummaries(): DevNodeSummary[] {
       fills: node.fills.length,
       strokes: node.strokes.length,
       strokeWeight: node.strokeWeight,
+      strokeAlign: node.strokeAlign,
       effects: node.effects.length,
     })
     for (const childId of node.children) {

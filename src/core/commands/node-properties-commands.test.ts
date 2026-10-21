@@ -9,6 +9,7 @@ import { SetCornerRadiusCommand } from './set-corner-radius-command'
 import { SetEffectsCommand } from './set-effects-command'
 import { SetFillsCommand } from './set-fills-command'
 import { SetOpacityCommand } from './set-opacity-command'
+import { SetStrokeAlignCommand } from './set-stroke-align-command'
 import { SetStrokeWeightCommand } from './set-stroke-weight-command'
 import { SetStrokesCommand } from './set-strokes-command'
 
@@ -201,6 +202,26 @@ describe('SetStrokeWeightCommand', () => {
     expect(first.mergeWith(second)).toBe(true)
     first.execute()
     expect(document.getNode('a')?.strokeWeight).toBe(8)
+  })
+})
+
+describe('SetStrokeAlignCommand', () => {
+  it('sets and restores the alignment through history', () => {
+    const document = scene(rectangle('a'))
+    const history = new History()
+    const command = SetStrokeAlignCommand.forNodes(document, ['a'], 'inside')!
+    history.execute(command)
+    expect(document.getNode('a')?.strokeAlign).toBe('inside')
+    history.undo()
+    expect(document.getNode('a')?.strokeAlign).toBe('center')
+    history.redo()
+    expect(document.getNode('a')?.strokeAlign).toBe('inside')
+  })
+
+  it('ignores nodes that already use the alignment', () => {
+    const document = scene(rectangle('a'))
+    expect(SetStrokeAlignCommand.forNodes(document, ['a'], 'center')).toBeNull()
+    expect(SetStrokeAlignCommand.forNodes(document, ['missing'], 'outside')).toBeNull()
   })
 })
 

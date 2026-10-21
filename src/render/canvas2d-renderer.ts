@@ -26,6 +26,8 @@ const OUTLINE_SCREEN_PX = 1
 const DRAFT_FILL_ALPHA = 0.6
 const GUIDE_MARKER_ARM_PX = 4
 const MAX_OUTLINED_SELECTION = 500
+const STROKE_ALIGN_WIDTH_FACTOR = 2
+const STROKE_CLIP_MARGIN_FACTOR = 2
 const NO_SNAP_GUIDES: readonly SnapGuide[] = []
 
 export interface Canvas2DRendererOptions {
@@ -267,16 +269,59 @@ export class Canvas2DRenderer implements Renderer {
       this.#setFillStyle(paintToCss(paint))
       context.fill()
     }
-    if (node.strokeWeight > 0) {
+    this.#drawStrokes(node)
+    if (shadow) this.#disableShadow()
+    this.#applyAlpha(1)
+  }
+
+  #drawStrokes(node: SceneNodeUnion): void {
+    if (node.strokeWeight <= 0) return
+    let hasPaint = false
+    for (const paint of node.strokes) {
+      if (paint.visible) {
+        hasPaint = true
+        break
+      }
+    }
+    if (!hasPaint) return
+    const context = this.#context
+    if (node.strokeAlign === 'center') {
       context.lineWidth = node.strokeWeight
       for (const paint of node.strokes) {
         if (!paint.visible) continue
         this.#setStrokeStyle(paintToCss(paint))
         context.stroke()
       }
+      return
     }
-    if (shadow) this.#disableShadow()
-    this.#applyAlpha(1)
+    const lineWidth = node.strokeWeight * STROKE_ALIGN_WIDTH_FACTOR
+    context.save()
+    this.#traceStrokeClip(node, lineWidth)
+    if (node.strokeAlign === 'inside') {
+      context.clip()
+    } else {
+      context.clip('evenodd')
+    }
+    context.beginPath()
+    this.#traceNodePath(node, node.width, node.height)
+    context.lineWidth = lineWidth
+    for (const paint of node.strokes) {
+      if (!paint.visible) continue
+      this.#setStrokeStyle(paintToCss(paint))
+      context.stroke()
+    }
+    context.restore()
+    this.#strokeStyle = ''
+  }
+
+  #traceStrokeClip(node: SceneNodeUnion, lineWidth: number): void {
+    const context = this.#context
+    context.beginPath()
+    if (node.strokeAlign === 'outside') {
+      const margin = lineWidth * STROKE_CLIP_MARGIN_FACTOR
+      context.rect(-margin, -margin, node.width + margin * 2, node.height + margin * 2)
+    }
+    this.#traceNodePath(node, node.width, node.height)
   }
 
   #applyAlpha(value: number): void {

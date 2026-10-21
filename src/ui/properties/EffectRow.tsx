@@ -37,16 +37,20 @@ export function EffectRow({
 
   return (
     <Cluster direction="vertical">
-      <Cluster class="effect-row">
+      <Cluster class="effect-row cluster--fields">
         <button
           type="button"
           ref={swatchRef}
           class="control paint-swatch"
           aria-label={t('effectColorLabel')}
           aria-expanded={pickerOpen}
-          style={{ background: withAlphaColor(effect.color, effect.opacity) }}
           onClick={() => setPickerOpen((value) => !value)}
-        />
+        >
+          <span
+            class="paint-swatch__chip"
+            style={{ background: withAlphaColor(effect.color, effect.opacity) }}
+          />
+        </button>
         <button
           type="button"
           class="control effect-name"
